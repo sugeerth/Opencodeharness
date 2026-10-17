@@ -1,17 +1,27 @@
 [project]
-name = "opencodeharness"
-version = "0.1.0"
-description = "Task harness for the OpenCode CLI"
+name = "openagent-harness"
+version = "0.2.0"
+description = "Open Agent: make OpenCode verify and repair its own work, with best-of-N and benchmarks"
 readme = "README.md"
 license = { text = "MIT" }
+authors = [{ name = "Sugeerth Murugesan" }]
 requires-python = ">=3.11"
 dependencies = []
+keywords = ["opencode", "coding-agent", "agent-harness", "llm", "benchmark"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development",
+]
+
+[project.urls]
+Homepage = "https://github.com/sugeerth/Opencodeharness"
 
 [project.optional-dependencies]
 dev = ["pytest"]
 
 [project.scripts]
-ocharness = "opencodeharness.cli:main"
+openagent = "openagent.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -22,3 +32,4 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+testpaths = ["tests"]

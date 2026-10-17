@@ -1,0 +1,2 @@
+Implement slugify(text) in text_utils.py: lowercase, transliterate accented Latin letters to ASCII,
+replace every run of non-alphanumeric characters with a single hyphen, and strip leading/trailing hyphens.

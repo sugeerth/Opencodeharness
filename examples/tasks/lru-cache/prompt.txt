@@ -1,0 +1,3 @@
+Implement the LRUCache class in lru.py: LRUCache(capacity) with get(key) returning the value or None,
+and put(key, value). get and put both mark a key as most recently used; inserting beyond capacity
+evicts the least recently used key. Both operations must be O(1).

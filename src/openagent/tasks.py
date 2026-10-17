@@ -1,0 +1,44 @@
+"""Benchmark tasks on disk.
+
+A task is a directory containing:
+  prompt.txt   the instruction for the agent (required)
+  files/       the starting workspace (optional)
+  check.sh     run in the workspace afterwards; exit 0 = pass (optional)
+  task.json    optional settings: {"check": "<shell command>", "protect": ["tests/**"],
+               "setup": "<shell command>", "timeout": 900}
+"""
+import json
+import shlex
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+@dataclass
+class Task:
+    name: str
+    prompt: str
+    files: Path | None = None
+    check: str | None = None
+    protect: list[str] = field(default_factory=list)
+    setup: str | None = None
+    timeout: int | None = None
+
+    @classmethod
+    def load(cls, d: str | Path) -> "Task":
+        d = Path(d).resolve()
+        cfg = json.loads((d / "task.json").read_text()) if (d / "task.json").is_file() else {}
+        check = cfg.get("check")
+        if check is None and (d / "check.sh").is_file():
+            check = f"bash {shlex.quote(str(d / 'check.sh'))}"
+        return cls(name=d.name, prompt=(d / "prompt.txt").read_text().strip(),
+                   files=d / "files" if (d / "files").is_dir() else None,
+                   check=check, protect=list(cfg.get("protect", [])),
+                   setup=cfg.get("setup"), timeout=cfg.get("timeout"))
+
+
+def discover(root: str | Path) -> list[Task]:
+    """Load every task under `root` (or `root` itself if it is a task)."""
+    root = Path(root)
+    if (root / "prompt.txt").is_file():
+        return [Task.load(root)]
+    return [Task.load(d) for d in sorted(root.iterdir()) if (d / "prompt.txt").is_file()]
