@@ -30,7 +30,9 @@ jobs:
       - run: pytest -q
       - run: openagent demo --agentdiff -j 3 -o demo-results
       - run: openagent demo --evolve 3 -j 3 -o demo-results/evolve
-      - run: grep -q '"stopped": "every task passes every run"' demo-results/evolve/evolution.json
+      - name: The evolution reaches every task passing
+        run: |
+          python -c "import json, sys; s = json.load(open('demo-results/evolve/evolution.json'))['stopped']; print(s); sys.exit(s != 'every task passes every run')"
       - uses: actions/upload-artifact@v4
         with:
           name: demo-results
