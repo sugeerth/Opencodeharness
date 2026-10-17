@@ -1,16 +1,18 @@
 # Open Code Harness
 
-A minimal, hackable, MIT-licensed coding-agent harness. About 150 lines: a model loop, five sandboxed tools
-(`read_file`, `write_file`, `edit_file`, `list_dir`, `bash`), and a CLI with approval prompts.
+A small test harness for [OpenCode](https://github.com/sst/opencode). It runs `opencode run` non-interactively
+on each task in a scratch copy of the task's files, then runs the task's `check.sh` to pass or fail it.
+No Python dependencies; MIT licensed.
 
 ```
+npm i -g opencode-ai          # or see the OpenCode install docs; configure a provider with `opencode auth login`
 pip install -e '.[dev]'
-export ANTHROPIC_API_KEY=...
-ocharness "add a --verbose flag to main.py" --dir ./myproject   # asks before edits/commands
-ocharness "fix the failing test" --yes                          # auto-approve
+ocharness examples/tasks --model anthropic/claude-sonnet-5-5 --json results.json
 pytest
 ```
 
-File tools are confined to the workspace root. `bash` is **not** sandboxed, so run it in a container for untrusted tasks.
+A task is a directory: `prompt.txt`, optional `files/` (starting workspace), optional `check.sh` (run in the
+workspace afterwards; exit 0 = pass). See `examples/tasks/hello`.
 
-Layout: `tools.py` (tools + schemas), `agent.py` (loop), `cli.py` (entry point). Contributions welcome.
+The harness passes `--auto`, which auto-approves permissions that aren't explicitly denied, so run it in a
+container or VM for untrusted prompts. Options: `--model provider/model`, `--agent`, `--timeout`, `--binary`.
