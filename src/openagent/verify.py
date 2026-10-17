@@ -53,8 +53,11 @@ class Guard:
         found = set()
         for pat in self.patterns:
             for p in self.root.glob(pat):
-                if p.is_file() and ".git" not in p.relative_to(self.root).parts:
-                    found.add(p.relative_to(self.root).as_posix())
+                # Before Python 3.13 a trailing "**" matches only directories, so expand them.
+                for f in (p.rglob("*") if p.is_dir() else [p]):
+                    rel = f.relative_to(self.root)
+                    if f.is_file() and not f.is_symlink() and ".git" not in rel.parts:
+                        found.add(rel.as_posix())
         return sorted(found)
 
     def tampered(self) -> list[str]:
