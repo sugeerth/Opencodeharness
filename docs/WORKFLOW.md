@@ -250,7 +250,17 @@ alone decide. That is the honest setting for measuring an agent, and it is where
 commit's tests in the workspace as the check instead (protected), which measures how well the
 repair loop drives a failing test to green.
 
-## 9. Your turn: real numbers
+## 9. All of it in a browser: `openagent ui`
+
+Every step above is also in the local front end. From one page you can:
+- start a run and watch the loop live
+- read its trace step by step, and its diff (it works in a copy by default)
+- run a benchmark, an evolution or this demo
+- open any results folder, including `docs/demo` and `docs/evolve`, and click any run to read its trace
+
+![The trace of parse-duration under openagent in the UI](img/ui-trace.png)
+
+## 10. Your turn: real numbers
 
 ```bash
 opencode auth login                              # your provider

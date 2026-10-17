@@ -9,7 +9,7 @@ model *thinks* it's done. Open Agent runs the loop a careful engineer would:
 2. **Guide**: send the task with autonomy rules and the exact command that must pass.
 3. **Verify**: run the check (`pytest`, `npm test`, `cargo test`, any shell command).
 4. **Repair**: if it fails, continue the *same* OpenCode session with the failing lines and go again.
-5. **Guard**: files you protect (e.g. `tests/**`) are restored before every check, so weakening a test never passes.
+5. **Guard**: files you protect (e.g. `tests/**`) are restored before every check, so editing or deleting a protected test never passes. New files are allowed (an agent writing new tests is good), so protect test configuration such as `conftest.py` or `pytest.ini` by name if it doesn't exist yet.
 6. **Know when to stop**: two rounds that change nothing end as `stalled`; a provider or network failure ends at once; `--max-cost` caps spend.
 7. **Best-of-N**: run attempts in parallel in isolated copies and keep the passing one with the fewest rounds.
 8. **Measure**: benchmark strategies against raw OpenCode, graded by held-out tests the agent never sees, and write every run as an AgentDiff trace for paired inference, pass^k, diagnosis and a scorecard.
@@ -19,6 +19,12 @@ model *thinks* it's done. Open Agent runs the loop a careful engineer would:
 The core is Python 3.11+ with no dependencies, it is MIT licensed, and it works with any model OpenCode supports.
 
 **[See the whole workflow, end to end →](docs/WORKFLOW.md)**
+
+```bash
+openagent ui      # all of it in a local web front end
+```
+
+![The Open Agent UI showing a benchmark: pass rates against baseline, AgentDiff's keep rule task by task, and every run](docs/img/ui-results.png)
 
 ```bash
 pip install git+https://github.com/sugeerth/Opencodeharness
@@ -71,6 +77,22 @@ served on localhost (`openagent.sim`), so it needs no API key. Six example tasks
 
 The playbooks decide those outcomes, so the demo shows the workflow, not how good any model is. The
 committed run is in [`docs/demo`](docs/demo/), walked through in [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+## The front end: `openagent ui`
+
+`openagent ui` opens a local web app (standard library only, no build step). From it you can:
+- **Start runs:** pick the repository, task, check, protected files, preset or evolved harness, model, rounds, attempts and budget. By default the agent works in a copy, so your folder isn't changed and the diff is shown.
+- **Watch runs live,** then read the result, the diff and every step of the trace: OpenCode's tool calls, Open Agent's checks, repairs and guard restores.
+- **Run benchmarks and evolutions** on a task folder, or the offline demo with no API key.
+- **Open any results folder** (`results.json` or `evolution.json`), for example the committed `docs/demo` and `docs/evolve`. Every run is a square you can click to read its trace.
+
+| | |
+|---|---|
+| ![A trace: the agent weakens a test, the guard restores it, the check fails, a repair, then the real fix](docs/img/ui-trace.png) | ![An evolution: the lineage from 4/6 to 6/6 and each generation's signal, change and verdict](docs/img/ui-evolution.png) |
+
+It listens only on 127.0.0.1. Because it runs commands, every API call must carry a per-session token
+embedded in the page and a localhost Host header, so no other website open in your browser can trigger
+a run (CSRF) or reach it through DNS rebinding. Jobs are kept in `~/.openagent/ui` (`--home` to change).
 
 ## Let it improve itself: `openagent evolve`
 
@@ -174,6 +196,21 @@ print(out.passed, out.best.stop, out.repairs, out.best.changes, out.stats.cost)
 Open Agent passes `--auto`, which tells OpenCode to approve any permission that isn't explicitly denied. That
 lets it run unattended, but it also means the agent can run shell commands. Use a container or VM for untrusted
 tasks, or `--no-auto` together with OpenCode permission rules.
+
+## Reviewed
+
+An independent review pass (a separate agent given only the code) found ten bugs. Each was reproduced
+and fixed, and each now has a regression test:
+1. A timed-out run could hang past `--timeout` when a child process ignored SIGTERM.
+2. The guard wrote through a symlink the agent put in place of a protected test, overwriting the link's target.
+3. In held-out tasks from git history, the old version of a test the commit had modified stayed in the workspace, so the visible check fought the correct fix.
+4. Best-of-N broke relative symlinks that point outside the repository.
+5. Edits under any directory named `build/` or `target/` were invisible. Now only what git ignores, and virtualenvs, are skipped.
+6. Files written by the check (reports, coverage) counted as the agent's edits.
+7. Best-of-N printed a losing attempt's final message, and reported changed files when nothing had been synced back.
+8. Non-ASCII test paths crashed `tasks from-git`.
+9. A passing run could be labelled a timeout in its trace.
+10. A missing `-C` directory gave a misleading error.
 
 ## Development
 

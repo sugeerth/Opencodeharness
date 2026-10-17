@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -610,3 +611,220 @@ def test_from_git_reveal_tests(tmp_path):
     assert (task.files / "tests" / "test_sub.py").exists() and task.grade is None
     assert "test_sub.py" in task.check and task.protect == ["tests/test_sub.py"]
     assert "already in the repository" in task.prompt
+
+
+# --- v0.5: the web front end -------------------------------------------------------------------
+
+@pytest.fixture
+def ui(tmp_path):
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+    from openagent.ui.server import Store, make_handler
+    store = Store(tmp_path / "uihome")
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(store, "tok"))
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+
+    def call(path, body=None, token="tok", host=None):
+        req = urllib.request.Request(base + path, data=json.dumps(body).encode() if body is not None else None,
+                                     headers={"X-OpenAgent-Token": token, "Content-Type": "application/json",
+                                              **({"Host": host} if host else {})})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read()
+                return r.status, (json.loads(raw) if r.headers.get_content_type() == "application/json" else raw.decode())
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode()
+
+    call.store = store
+    yield call
+    httpd.shutdown()
+
+
+def test_ui_page_and_auth(ui):
+    code, page = ui("/", token="")
+    assert code == 200 and 'const TOKEN = "tok"' in page
+    assert ui("/api/jobs", token="wrong")[0] == 403
+    assert ui("/api/jobs", host="evil.example")[0] == 403            # DNS rebinding
+    assert ui("/api/run", {"task": "x", "dir": "/"}, token="")[0] == 403  # CSRF
+    assert ui("/api/info")[1]["presets"] == list(PRESETS)
+
+
+def test_ui_run_job_end_to_end(ui, fake, tmp_path):
+    import time as _t
+    oc = fake("repair")
+    repo = ws(tmp_path, "repo")
+    (repo / "hello.txt").write_text("bye\n")
+    code, job = ui("/api/run", {"dir": str(repo), "task": "say hi", "check": CHECK, "binary": oc.binary, "copy": True})
+    assert code == 200
+    for _ in range(100):
+        code, j = ui(f"/api/jobs/{job['id']}")
+        if j["status"] not in ("queued", "running"):
+            break
+        _t.sleep(0.1)
+    assert j["status"] == "passed" and j["summary"]["repairs"] == 1 and j["summary"]["files"] == ["hello.txt"]
+    assert any("check passed" in l for l in j["log"])
+    assert (repo / "hello.txt").read_text() == "bye\n"            # worked in a copy
+    diff = ui(f"/api/jobs/{job['id']}/file?path=diff.patch")[1]
+    assert "-bye" in diff and "+hi" in diff
+    trace = ui(f"/api/jobs/{job['id']}/file?path={j['summary']['trace']}")[1]
+    assert trace["schema_version"] == 1 and trace["outcome"]["success"]
+    assert ui(f"/api/jobs/{job['id']}/file?path=../../../etc/passwd")[0] == 403
+
+
+def test_ui_import_and_delete_keeps_the_folder(ui):
+    demo = Path(__file__).parents[1] / "docs" / "demo"
+    code, job = ui("/api/import", {"dir": str(demo)})
+    assert code == 200 and job["status"] == "done"
+    res = ui(f"/api/jobs/{job['id']}/file?path=results.json")[1]
+    assert {s["strategy"] for s in res["summary"]} >= {"baseline", "openagent"}
+    assert ui("/api/import", {"dir": "/nonexistent"})[0] == 400
+    assert ui(f"/api/jobs/{job['id']}/delete", {})[1] == {"ok": True}
+    assert (demo / "results.json").is_file() and ui("/api/jobs")[1] == []
+
+
+def test_ui_jobs_survive_a_restart(ui, tmp_path):
+    from openagent.ui.server import Store
+    ui("/api/import", {"dir": str(Path(__file__).parents[1] / "docs" / "evolve")})
+    again = Store(ui.store.home)
+    assert [j.kind for j in again.jobs.values()] == ["import"]
+
+
+# --- v0.5: regressions from the independent review ------------------------------------------------
+
+def _script(tmp_path, name, body):
+    p = tmp_path / name
+    p.write_text("#!/usr/bin/env python3\n" + body)
+    p.chmod(0o755)
+    return str(p)
+
+
+def test_timeout_kills_children_that_ignore_sigterm(tmp_path):
+    import time as _t
+    exe = tmp_path / "oc.sh"
+    exe.write_text("#!/bin/bash\n(trap '' TERM; sleep 30) &\nsleep 100\n")
+    exe.chmod(0o755)
+    t0 = _t.monotonic()
+    r = OpenCode(binary=str(exe), timeout=1).run("x", tmp_path)
+    assert r.timed_out and _t.monotonic() - t0 < 15
+
+
+def test_guard_never_writes_through_a_symlink(tmp_path):
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "src").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("TEST")
+    (tmp_path / "src" / "app.py").write_text("APP")
+    g = Guard(tmp_path, ["tests/**"])
+    (tmp_path / "tests" / "test_a.py").unlink()
+    (tmp_path / "tests" / "test_a.py").symlink_to(tmp_path / "src" / "app.py")
+    assert g.restore() == ["tests/test_a.py"]
+    assert (tmp_path / "src" / "app.py").read_text() == "APP"
+    assert not (tmp_path / "tests" / "test_a.py").is_symlink() and (tmp_path / "tests" / "test_a.py").read_text() == "TEST"
+
+
+BUMP = ("import json, re\np = 'build/compiler.py'\nv = int(re.search(r'V = (\\d+)', open(p).read()).group(1)) + 1\n"
+        "open(p, 'w').write(f'V = {v}\\n')\nprint(json.dumps({'type': 'step_finish', 'sessionID': 's', 'part': {'cost': 0}}))\n")
+
+
+def test_edits_under_a_dir_named_build_are_seen(tmp_path):
+    d = ws(tmp_path)
+    (d / "build").mkdir()
+    (d / "build" / "compiler.py").write_text("V = 0\n")
+    out = solve("bump", d, "grep -q 'V = 3' build/compiler.py", OpenCode(binary=_script(tmp_path, "oc", BUMP)),
+                Strategy(rounds=5))
+    assert out.passed and out.best.changes["modified"] == ["build/compiler.py"]
+
+
+def test_fingerprint_skips_what_git_ignores_and_virtualenvs(tmp_path):
+    import subprocess
+    from openagent.verify import fingerprint
+    d = ws(tmp_path)
+    subprocess.run(["git", "-C", str(d), "init", "-q"], check=True)
+    (d / ".gitignore").write_text("out/\n")
+    for rel in ("out/x.o", "src/a.py", "env/pyvenv.cfg", "env/lib.py"):
+        (d / rel).parent.mkdir(parents=True, exist_ok=True)
+        (d / rel).write_text("x")
+    assert sorted(fingerprint(d)) == [".gitignore", "src/a.py"]
+
+
+def test_files_the_check_writes_are_not_agent_edits(fake, tmp_path):
+    d = ws(tmp_path)
+    (d / "hello.txt").write_text("bye\n")
+    check = "date +%s%N > report.xml; grep -qx hi hello.txt"
+    out = solve("t", d, check, fake("never"), Strategy(rounds=5))
+    a = out.best
+    assert a.stop == "stalled" and all("report.xml" not in r.changed for r in a.rounds)
+    assert "report.xml" not in sum(a.changes.values(), [])
+
+
+def test_best_of_n_keeps_relative_symlinks_outside_the_workspace(fake, tmp_path):
+    (tmp_path / "shared").mkdir()
+    (tmp_path / "shared" / "lib.txt").write_text("LIB")
+    d = ws(tmp_path, "pkg")
+    (d / "shared").symlink_to("../shared")
+    out = solve("t", d, "test -f shared/lib.txt && grep -qx hi hello.txt", fake("good"), Strategy(rounds=0, attempts=2))
+    assert out.passed and os.readlink(d / "shared") == "../shared"   # the user's link is left as it was
+
+
+def test_best_of_n_reports_the_winner_and_nothing_applied_when_all_fail(fake, tmp_path):
+    out = solve("t", ws(tmp_path, "a"), CHECK, fake("flaky"), Strategy(rounds=0, attempts=2))
+    assert out.winner == 0 and out.final_text == "wrote hi"
+    d = ws(tmp_path, "b")
+    out = solve("t", d, CHECK, fake("never"), Strategy(rounds=0, attempts=2))
+    assert out.winner is None and sum(out.applied_changes.values(), []) == [] and not (d / "hello.txt").exists()
+    assert out.to_dict()["changes"] == out.applied_changes
+
+
+def test_passing_run_is_not_labelled_timeout(tmp_path):
+    from openagent.agent import Outcome, Round
+    from openagent.events import RunStats
+    from openagent.traces import to_trajectory
+    from openagent.verify import CheckResult
+    r0 = Round(-1, 1.0, RunStats(errors=["timed out after 1s"]), CheckResult(False, 1, "", 0), [])
+    r1 = Round(0, 1.0, RunStats(), CheckResult(True, 0, "", 0), [])
+    out = Outcome(PRESETS["openagent"], True, 0, [Attempt(True, [r0, r1], stop="passed")])
+    assert to_trajectory(out, "t", "p", CHECK)["outcome"]["termination"] == "agent_stop"
+
+
+def test_missing_directory_is_a_clear_error(fake, tmp_path):
+    out = solve("t", tmp_path / "nope", CHECK, fake("good"))
+    assert not out.passed and out.error.startswith("not a directory") and fake.calls() == []
+
+
+def test_from_git_drops_old_versions_of_modified_tests_and_handles_unicode(tmp_path):
+    import subprocess
+    from openagent.gittasks import build
+    r = tmp_path / "repo"
+    r.mkdir()
+    g = lambda *a: subprocess.run(["git", "-C", str(r), *a], check=True, capture_output=True)  # noqa: E731
+    g("init", "-q"); g("config", "user.email", "t@e.com"); g("config", "user.name", "t")
+    (r / "m.py").write_text("def f():\n    return 1\n")
+    (r / "tests").mkdir()
+    (r / "tests" / "test_m.py").write_text("from m import f\n\ndef test_f():\n    assert f() == 1\n")
+    g("add", "-A"); g("commit", "-qm", "init")
+    (r / "m.py").write_text("def f():\n    return 2\n")
+    (r / "tests" / "test_m.py").write_text("from m import f\n\ndef test_f():\n    assert f() == 2\n")
+    (r / "tests" / "test_café.py").write_text("from m import f\n\ndef test_c():\n    assert f() == 2\n")
+    g("add", "-A"); g("commit", "-qm", "f returns 2")
+    report = build(r, tmp_path / "tasks", TEST_CMD)
+    assert len(report["taken"]) == 1 and "tests/test_café.py" in report["taken"][0]["tests"]
+    (task,) = discover(tmp_path / "tasks")
+    assert not (task.files / "tests" / "test_m.py").exists()          # the old expectation is gone
+    w = tmp_path / "w"
+    shutil.copytree(task.files, w)
+    (w / "m.py").write_text("def f():\n    return 2\n")                 # the correct change
+    assert run_check(task.check, w).exit_code in (0, 5)                 # visible check doesn't fight it
+    assert run_check(task.grade, w).passed
+
+
+def test_setup_failure_is_not_an_agent_signal(fake, tmp_path):
+    from openagent.evolve import signals
+    (r,) = run_bench([Task("s", "x", setup="exit 1", check=CHECK)], [PRESETS["openagent"]], fake("good"))
+    assert r["stop"] == "setup_failed" and signals([r]) == {}
+
+
+def test_sim_prefers_the_most_specific_playbook(tmp_path):
+    from openagent.sim import Playbook, Policy
+    a, b = Playbook("Fix it", [{"say": "a"}]), Playbook("Fix it properly", [{"say": "b"}])
+    assert Policy([a, b]).find(["Task:\nFix it properly"]) is b

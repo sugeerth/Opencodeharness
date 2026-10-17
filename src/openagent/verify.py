@@ -2,6 +2,7 @@
 import hashlib
 import os
 import re
+import shutil
 import signal
 import subprocess
 import time
@@ -30,7 +31,12 @@ def run_check(command: str, cwd: str | Path, timeout: int = 600) -> CheckResult:
             os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        out, _ = proc.communicate()
+        try:
+            out, _ = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:  # a descendant in another session still holds the pipe
+            proc.stdout.close()
+            proc.wait()
+            out = ""
         out += f"\n[check timed out after {timeout}s]"
         code = -1
     return CheckResult(code == 0, code, out[-8000:], time.monotonic() - start)
@@ -67,7 +73,8 @@ class Guard:
         bad = []
         for rel, data in self.saved.items():
             p = self.root / rel
-            if not p.is_file() or _digest(p.read_bytes()) != _digest(data):
+            # A symlink in place of a protected file is tampering, whatever it points at.
+            if p.is_symlink() or not p.is_file() or _digest(p.read_bytes()) != _digest(data):
                 bad.append(rel)
         return bad
 
@@ -76,6 +83,11 @@ class Guard:
         bad = self.tampered()
         for rel in bad:
             p = self.root / rel
+            # Never write through a link the agent put there: that would overwrite its target.
+            if p.is_symlink():
+                p.unlink()
+            elif p.is_dir():
+                shutil.rmtree(p)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_bytes(self.saved[rel])
         return bad
@@ -116,8 +128,10 @@ def excerpt(output: str, max_lines: int = 120, tail: int = 30) -> str:
 
 
 CACHE_SUFFIXES = {".pyc", ".pyo"}
-SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache", ".pytest_cache",
-             ".ruff_cache", "target", "dist", "build", ".next", ".tox", ".opencode"}
+# Skipped at any depth: version control, dependencies and caches nobody edits by hand.
+SKIP_DIRS = {".git", "node_modules", "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".tox",
+             ".next", ".opencode"}
+CACHE_DIRS = {"__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
 
 
 def fingerprint(root: str | Path, max_files: int = 50_000) -> dict[str, str]:
@@ -125,8 +139,14 @@ def fingerprint(root: str | Path, max_files: int = 50_000) -> dict[str, str]:
     Used to see what a round changed and to notice rounds that changed nothing."""
     root = Path(root)
     out: dict[str, str] = {}
+    ignored = _git_ignored_dirs(root)
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        here = Path(dirpath)
+        # Beyond the fixed list, skip what git ignores (build output, environments) or, outside a git
+        # repository, virtualenvs. A directory merely *named* build/ or target/ may hold source.
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS
+                             and (here / d).relative_to(root).as_posix() not in ignored
+                             and not (here / d / "pyvenv.cfg").is_file())
         for name in sorted(filenames):
             p = Path(dirpath) / name
             if p.is_symlink() or not p.is_file():
@@ -140,6 +160,17 @@ def fingerprint(root: str | Path, max_files: int = 50_000) -> dict[str, str]:
             if len(out) >= max_files:
                 return out
     return out
+
+
+def _git_ignored_dirs(root: Path) -> set[str]:
+    if not (root / ".git").exists():
+        return set()
+    try:
+        p = subprocess.run(["git", "-C", str(root), "ls-files", "--others", "--ignored", "--exclude-standard",
+                            "--directory", "-z"], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
+    return {e.rstrip("/") for e in p.stdout.split("\0") if e.endswith("/")} if p.returncode == 0 else set()
 
 
 def changes(before: dict[str, str], after: dict[str, str]) -> dict[str, list[str]]:

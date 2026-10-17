@@ -85,7 +85,7 @@ def signals(results: list[dict]) -> dict[str, list[str]]:
             add("stalled", t)
         if stop == "rounds_exhausted":
             add("rounds_exhausted", t)
-        if not r.get("check_passed", r.get("passed")) and stop not in ("infra_error", "error"):
+        if not r.get("check_passed", r.get("passed")) and stop not in ("infra_error", "error", "setup_failed"):
             add("check_failed", t)
         if any(rd.get("tampered") for a in r.get("attempts", []) for rd in a.get("rounds", [])):
             add("tampered", t)
@@ -155,7 +155,7 @@ def evolve(tasks: list[Task], base: Strategy, oc: OpenCode, out_dir: str | Path,
             break
         cand_spec, fired_on = picks[0]
         tried.add(cand_spec.id)
-        name = f"v{len(history)}"
+        name = f"v{g}"  # one name per generation, so a reverted candidate's name is never reused
         cand = apply(current, cand_spec, name)
         gen_dir = out / f"gen-{g}"
         log(f"generation {g}: trying {cand_spec.id} (signal {cand_spec.signal} on {', '.join(fired_on)})")

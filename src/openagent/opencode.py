@@ -84,8 +84,7 @@ class OpenCode:
             out, err = proc.communicate(timeout=self.timeout)
         except subprocess.TimeoutExpired:
             timed_out = True
-            _kill_group(proc)
-            out, err = proc.communicate()
+            out, err = _kill_group(proc)
         events = parse_events(out)
         stats = summarize(events)
         if timed_out:
@@ -94,15 +93,30 @@ class OpenCode:
                          time.monotonic() - start, err[-4000:], timed_out, events)
 
 
-def _kill_group(proc: subprocess.Popen) -> None:
-    """OpenCode may spawn a server and tool subprocesses; take the whole group down."""
-    for sig in (signal.SIGTERM, signal.SIGKILL):
-        try:
-            os.killpg(proc.pid, sig)
-        except ProcessLookupError:
-            return
-        try:
-            proc.wait(timeout=5)
-            return
-        except subprocess.TimeoutExpired:
-            continue
+def _kill_group(proc: subprocess.Popen, grace: float = 5.0) -> tuple[str, str]:
+    """Take the whole process group down (OpenCode may spawn a server and tool subprocesses) and
+    return what it printed. SIGKILL always follows the grace period: the leader exiting on SIGTERM
+    says nothing about children that ignore it and keep the output pipes open. If something outside
+    the group still holds the pipes, stop reading rather than hang."""
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        proc.wait(timeout=grace)
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    try:
+        return proc.communicate(timeout=grace)
+    except subprocess.TimeoutExpired:
+        for pipe in (proc.stdout, proc.stderr):
+            try:
+                pipe.close()
+            except OSError:
+                pass
+        proc.wait()
+        return "", ""

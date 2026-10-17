@@ -13,6 +13,7 @@ at all (command not found) is reported instead of being handed to the agent as a
 Best-of-N runs several attempts in parallel in separate copies of the workspace and keeps the
 passing one with the fewest rounds, then the lowest cost.
 """
+import os
 import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -158,13 +159,28 @@ class Outcome:
     def repairs(self) -> int:
         return max(len(self.best.rounds) - 1, 0) if self.best else 0
 
+    @property
+    def final_text(self) -> str:
+        """The agent's last message in the attempt that counts (the winner's, with best-of-N)."""
+        return self.best.stats.last_text if self.best else ""
+
+    @property
+    def applied_changes(self) -> dict[str, list[str]]:
+        """What changed in the user's directory. With best-of-N and no passing attempt, nothing was
+        synced back, so nothing changed, whatever the attempts did in their copies."""
+        empty = {"added": [], "modified": [], "deleted": []}
+        if not self.best or (len(self.attempts) > 1 and self.winner is None):
+            return empty
+        return self.best.changes
+
     def to_dict(self) -> dict:
         b = self.best
         return {"strategy": self.strategy.name, "passed": self.passed, "winner": self.winner,
                 "repairs": self.repairs, "stop": b.stop if b else "error", "error": self.error,
                 "already_passing": bool(self.preflight and self.preflight.passed),
                 "seconds": round(self.seconds, 2), "stats": self.stats.to_dict(),
-                "changes": b.changes if b else {}, "attempts": [a.to_dict() for a in self.attempts]}
+                "changes": self.applied_changes, "final_text": self.final_text,
+                "attempts": [a.to_dict() for a in self.attempts]}
 
 
 Log = Callable[[str], None]
@@ -203,16 +219,23 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
             max_cost: float | None = None) -> Attempt:
     guard = Guard(workspace, list(protect)) if protect else None
     result = Attempt(passed=False, workspace=workspace)
-    start = prev = fingerprint(workspace)
+    start = last = fingerprint(workspace)
+    touched: set[str] = set()   # files the agent changed in some round (never ones only the check wrote)
     prompt, session, idle = first_prompt(task, check, strategy), None, 0
+
+    def agent_changes() -> dict[str, list[str]]:
+        return {k: [p for p in v if p in touched] for k, v in changes(start, last).items()}
 
     def finish(stop: str) -> Attempt:
         result.stop = stop
-        result.changes = changes(start, fingerprint(workspace))
+        result.changes = agent_changes()
         return result
 
     for n in range(strategy.rounds + 1):
         log(f"{'run' if n == 0 else f'repair {n}/{strategy.rounds}'}: opencode")
+        # Taken right before the agent's turn, after the previous check: files a check writes
+        # (reports, coverage) are not the agent's edits.
+        prev = fingerprint(workspace)
         run = oc.run(prompt, workspace, session)
         retried = False
         if run.empty and run.exit_code != 127:
@@ -226,9 +249,9 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
         tampered = guard.restore() if guard else []
         if tampered:
             log(f"restored protected files: {', '.join(tampered)}")
-        now = fingerprint(workspace)
+        now = last = fingerprint(workspace)
         changed = [p for group in changes(prev, now).values() for p in group]
-        prev = now
+        touched.update(changed)
         cr = run_check(check, workspace, check_timeout) if check else None
         result.rounds.append(Round(run.exit_code, run.seconds, run.stats, cr, tampered, prompt, run.events, changed,
                                    run.stderr, retried))
@@ -254,7 +277,7 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
             log(f"cost budget reached (${spent:.4f} >= ${max_cost:.4f})")
             return finish("budget")
         if n < strategy.rounds:
-            so_far = [p for group in changes(start, now).values() for p in group]
+            so_far = [p for group in agent_changes().values() for p in group]
             prompt = repair_prompt(task, check, cr, n + 1, strategy.rounds, tampered,
                                    new_session=session is None, no_progress=not changed, changed_so_far=so_far)
     return finish("rounds_exhausted" if strategy.rounds else "failed")
@@ -276,6 +299,8 @@ def solve(task: str, workdir: str | Path, check: str | None = None, oc: OpenCode
     files are synced back into `workdir`."""
     oc = oc or OpenCode()
     workdir = Path(workdir).resolve()
+    if not workdir.is_dir():
+        return Outcome(strategy, False, None, [], None, f"not a directory: {workdir}")
     pre = None
     if check and preflight_check:
         pre, err = preflight(check, workdir, check_timeout)
@@ -294,7 +319,7 @@ def solve(task: str, workdir: str | Path, check: str | None = None, oc: OpenCode
         copies = []
         for i in range(strategy.attempts):
             dst = Path(tmp) / f"attempt-{i}"
-            shutil.copytree(workdir, dst, symlinks=True)
+            copy_workspace(workdir, dst)
             copies.append(dst)
 
         def one(i: int) -> Attempt:
@@ -312,6 +337,22 @@ def solve(task: str, workdir: str | Path, check: str | None = None, oc: OpenCode
         return Outcome(strategy, winner is not None, winner, attempts, pre)
 
 
+def copy_workspace(src: Path, dst: Path) -> None:
+    """Copy a workspace for an attempt, keeping symlinks as links. A relative link that points
+    outside the workspace (common in a monorepo subdirectory: ../shared) would dangle in the copy,
+    so it is re-pointed at its absolute target; sync_tree leaves such links alone on the way back."""
+    shutil.copytree(src, dst, symlinks=True)
+    for link in [p for p in dst.rglob("*") if p.is_symlink()]:
+        target = os.readlink(link)
+        if os.path.isabs(target):
+            continue
+        original = src / link.relative_to(dst)
+        resolved = (original.parent / target).resolve()
+        if resolved != src and src not in resolved.parents:
+            link.unlink()
+            link.symlink_to(resolved)
+
+
 def pick_winner(attempts: list[Attempt]) -> int | None:
     passing = [i for i, a in enumerate(attempts) if a.passed]
     if not passing:
@@ -327,6 +368,8 @@ def sync_tree(src: Path, dst: Path, skip: tuple[str, ...] = (".git",)) -> None:
             continue
         target = dst / rel
         if path.is_symlink():
+            if target.is_symlink() and os.path.realpath(path) == os.path.realpath(target):
+                continue  # same destination (e.g. a link copy_workspace re-pointed): keep the user's own
             if target.is_symlink() or target.exists():
                 if target.is_dir() and not target.is_symlink():
                     shutil.rmtree(target)

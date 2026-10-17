@@ -155,7 +155,7 @@ def to_trajectory(outcome: Outcome, task_id: str, prompt: str, check: str | None
             steps.append(step)
     stats = outcome.stats
     success = outcome.passed if graded is None else bool(graded)
-    last_text = stats.last_text.strip()
+    last_text = outcome.final_text.strip()
     verdict = ("passed" if outcome.passed else "failed") + (f" after {outcome.repairs} repair(s)" if a else "")
     answer = (f"check {verdict}" if check else ("finished" if outcome.passed else "failed"))
     if graded is not None:
@@ -169,7 +169,7 @@ def to_trajectory(outcome: Outcome, task_id: str, prompt: str, check: str | None
     harness = {"adapter": f"openagent {__version__}", "graded_by": "grade" if graded is not None else "check",
                "stop": a.stop if a else "error", "repairs": outcome.repairs,
                "opencode_retries": sum(r.retried for r in a.rounds) if a else 0,
-               "changes": a.changes if a else {}}
+               "changes": outcome.applied_changes}
     if grade_output:
         harness["grade_output"] = _clip(grade_output, 2000)
     if synthetic:
@@ -182,8 +182,9 @@ def to_trajectory(outcome: Outcome, task_id: str, prompt: str, check: str | None
                   "config": {**s.to_dict(), "check": check}},
         "task": {"id": task_id, "prompt": prompt, "expected": None},
         "outcome": {"success": success, "answer": answer, "score": 1.0 if success else 0.0,
-                    "termination": "timeout" if a and any(r.stats.errors and "timed out" in r.stats.errors[-1]
-                                                          for r in a.rounds)
+                    # a timeout only ends the run if it was the last round
+                    "termination": "timeout" if a and a.rounds and a.stop != "passed"
+                                   and any("timed out" in e for e in a.rounds[-1].stats.errors)
                     else TERMINATION.get(a.stop if a else "error", "agent_stop")},
         "totals": {"input_tokens": stats.input_tokens + stats.cache_read_tokens + stats.cache_write_tokens,
                    "output_tokens": stats.output_tokens + stats.reasoning_tokens,

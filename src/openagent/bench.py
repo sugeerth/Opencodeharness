@@ -43,7 +43,8 @@ def run_one(task: Task, strategy: Strategy, oc: OpenCode, repeat: int = 0, log: 
             s = run_check(task.setup, ws)
             if not s.passed:
                 log(f"{tag}: setup failed")
-                return {**base, "passed": False, "check_passed": False, "error": "setup failed: " + s.output[-500:]}
+                return {**base, "passed": False, "check_passed": False, "stop": "setup_failed",
+                        "error": "setup failed: " + s.output[-500:]}
         out = solve(task.prompt, ws, task.check, oc, strategy, task.protect, log=lambda m: log(f"{tag}: {m}"))
         graded, grade_output = None, ""
         if task.grade and not out.error:

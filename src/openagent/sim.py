@@ -87,10 +87,9 @@ class Policy:
         self.playbooks = playbooks
 
     def find(self, users: list[str]) -> Playbook | None:
-        for pb in self.playbooks:
-            if any(pb.prompt in u for u in users):
-                return pb
-        return None
+        # the longest matching prompt wins, so a task whose prompt contains another's is not confused with it
+        hits = [pb for pb in self.playbooks if any(pb.prompt in u for u in users)]
+        return max(hits, key=lambda pb: len(pb.prompt)) if hits else None
 
     def respond(self, body: dict) -> dict:
         """Returns {"text": str} or {"tool": name, "args": dict}."""

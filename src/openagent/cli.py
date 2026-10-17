@@ -4,6 +4,7 @@
   openagent bench examples/tasks --preset baseline --preset openagent --agentdiff
   openagent demo        # the whole workflow, offline: real OpenCode, scripted model, AgentDiff evals
   openagent evolve examples/tasks -m anthropic/claude-sonnet-5-5   # a harness that improves itself
+  openagent ui          # all of it in a web front end
 """
 import argparse
 import json
@@ -75,9 +76,9 @@ def cmd_run(a) -> int:
         log(out.error)
         return 2
     s = out.stats
-    if s.last_text:
-        print(s.last_text)
-    ch = out.best.changes if out.best else {}
+    if out.final_text:
+        print(out.final_text)
+    ch = out.applied_changes
     touched = sum(len(v) for v in ch.values())
     log(f"{'PASSED' if out.passed else 'FAILED'} ({out.best.stop}) after {out.repairs} repair(s), "
         f"{touched} file(s) changed, {s.total_tokens:,} tokens, ${s.cost:.4f}, {out.seconds:.0f}s")
@@ -188,6 +189,12 @@ def cmd_tasks_from_git(a) -> int:
     return 0 if report["taken"] else 1
 
 
+def cmd_ui(a) -> int:
+    from .ui.server import serve
+    serve(a.port, a.home, not a.no_browser)
+    return 0
+
+
 def cmd_presets(_a) -> int:
     for name, s in PRESETS.items():
         print(f"{name:<10} preamble={s.preamble} reveal_check={s.reveal_check} "
@@ -265,6 +272,12 @@ def main(argv=None) -> int:
     fg.add_argument("--setup", help="shell command to prepare a checkout, e.g. 'pip install -e .'")
     fg.add_argument("--timeout", type=int, default=600, help="seconds per test run while validating")
     fg.set_defaults(fn=cmd_tasks_from_git)
+
+    u = sub.add_parser("ui", help="open the web front end: start runs, benchmarks, evolutions and the demo, and read the results")
+    u.add_argument("--port", type=int, default=8765, help="port on 127.0.0.1 (default 8765; 0 picks a free one)")
+    u.add_argument("--home", help="where jobs are kept (default ~/.openagent/ui)")
+    u.add_argument("--no-browser", action="store_true", help="don't open a browser")
+    u.set_defaults(fn=cmd_ui)
 
     sub.add_parser("presets", help="list strategy presets").set_defaults(fn=cmd_presets)
 

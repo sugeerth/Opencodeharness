@@ -60,16 +60,33 @@ def candidates(repo: Path, look: int = 200, most_files: int = 15, branch: str = 
         parents = git(repo, "log", "-1", "--format=%P", sha).split()
         if len(parents) != 1:
             continue
-        changed = []
-        for line in git(repo, "show", "--name-status", "--format=", sha).splitlines():
-            parts = line.split("\t")
-            if len(parts) >= 2:
-                changed.append((parts[0][0], parts[-1]))
+        changed = name_status(repo, sha)
         tests = [p for st, p in changed if is_test(p) and st in ("A", "M")]
         code = [p for st, p in changed if not is_test(p) and not NOT_CODE.search(p)]
         if tests and code and len(changed) <= most_files:
             message = TRAILER.sub("", git(repo, "log", "-1", "--format=%B", sha)).strip()
             out.append({"sha": sha, "parent": parents[0], "tests": tests, "code": code, "message": message})
+    return out
+
+
+def name_status(repo: Path, sha: str) -> list[tuple[str, str]]:
+    """[(status letter, path)] for a commit. -z keeps paths with non-ASCII characters, tabs or quotes
+    as they are, instead of C-quoting them (which `git show sha:path` would not understand)."""
+    fields = git(repo, "show", "-z", "--name-status", "--format=", sha).split("\0")
+    out, i = [], 0
+    while i < len(fields):
+        st = fields[i].strip()
+        if not st:
+            i += 1
+            continue
+        if st[0] in "RC":           # renames and copies: status, old path, new path
+            if i + 2 < len(fields):
+                out.append((st[0], fields[i + 2]))
+            i += 3
+        else:
+            if i + 1 < len(fields):
+                out.append((st[0], fields[i + 1]))
+            i += 2
     return out
 
 
@@ -161,6 +178,8 @@ def validate(repo: Path, c: dict, grade_cmd: str, setup: str | None, timeout: in
             return "its tests already pass on the parent: nothing to do"
         if not want_pass and code in (126, 127):
             return f"the test command could not run (exit {code})"
+        if not want_pass and code == -1:
+            return f"its tests timed out on the parent ({timeout}s): a timeout is not a sound failure"
     return ""
 
 
@@ -168,6 +187,14 @@ def write_task(repo: Path, c: dict, d: Path, test_cmd: str, grade_cmd: str, reve
     if d.exists():
         shutil.rmtree(d)
     export(repo, c["parent"], d / "files")
+    if not reveal:
+        # The commit's tests are the grader. A test file it modified must not stay in the workspace in
+        # its old form: the visible check would then fail on the correct change and the repair loop
+        # would push the agent back towards the old behaviour.
+        for t in c["tests"]:
+            old = d / "files" / t
+            if old.is_file() or old.is_symlink():
+                old.unlink()
     hidden = d / ("files" if reveal else "grade")
     for t in c["tests"]:
         dst = hidden / t
