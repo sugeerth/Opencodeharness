@@ -1,0 +1,244 @@
+{
+  "started": "2026-10-17 23:09",
+  "model": "scripted/coder",
+  "tasks": [
+    "fix-average",
+    "fix-config",
+    "hello",
+    "lru-cache",
+    "parse-duration",
+    "slugify"
+  ],
+  "repeat": 2,
+  "base": {
+    "name": "openagent",
+    "preamble": true,
+    "reveal_check": true,
+    "rounds": 3,
+    "attempts": 1,
+    "instructions": []
+  },
+  "synthetic": "OpenCode ran for real, with its own tools and sessions, but the model was a scripted playbook (openagent.sim), not an LLM. These numbers show the workflow, not how well any model or strategy does: the playbooks decide that.",
+  "generations": [
+    {
+      "generation": 1,
+      "candidate": "edge_cases",
+      "name": "v1",
+      "signal": "held_out_fail",
+      "proposed_by": [
+        "lru-cache"
+      ],
+      "why": "runs passed the visible check but failed the held-out grade: the check doesn't cover everything the task asks",
+      "instruction": "Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check.",
+      "rounds_added": 0,
+      "current": "v0",
+      "rates": {
+        "current": {
+          "fix-average": 1.0,
+          "fix-config": 0.0,
+          "hello": 1.0,
+          "lru-cache": 0.0,
+          "parse-duration": 1.0,
+          "slugify": 1.0
+        },
+        "candidate": {
+          "fix-average": 1.0,
+          "fix-config": 0.0,
+          "hello": 1.0,
+          "lru-cache": 1.0,
+          "parse-duration": 1.0,
+          "slugify": 1.0
+        }
+      },
+      "wins": [
+        "lru-cache"
+      ],
+      "losses": [],
+      "ties": [
+        "fix-average",
+        "fix-config",
+        "hello",
+        "parse-duration",
+        "slugify"
+      ],
+      "sign_test_p": 1.0,
+      "confirm": {
+        "tasks": [
+          "lru-cache"
+        ],
+        "rates": {
+          "current": {
+            "lru-cache": 0.0
+          },
+          "candidate": {
+            "lru-cache": 1.0
+          }
+        },
+        "wins": [
+          "lru-cache"
+        ],
+        "losses": [],
+        "ties": [],
+        "sign_test_p": 1.0
+      },
+      "verdict": "kept",
+      "reason": "won lru-cache, lost none, and held on the re-run",
+      "agentdiff": [
+        {
+          "pair": "v0-vs-v1",
+          "summary": "Agents: A=v0  B=v1\nPaired inference over 6 task(s): v0 minus v1 = -0.1667 \u00b1 0.1667 (95% [-0.4933, 0.16]); sign test p=1.0 \u2014 not distinguishable: only 6 paired task(s) (needs at least 10)\nRuns: {'v0': 2, 'v1': 2}\n  fix-average: A stable-pass B stable-pass | divergence none\n  fix-config: A stable-fail B stable-fail | divergence none\n  hello: A stable-pass B stable-pass | divergence none\n  lru-cache: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)\n  parse-duration: A stable-pass B stable-pass | divergence none\n  slugify: A stable-pass B stable-pass | divergence none\nv0 fails all runs on 2 task(s) (reproducible); v1 fails all runs on 1 task(s) (reproducible). Divergences are systematic on 1 of 6 task(s), so the observed gaps are behavioral, not noise.\nDiagnosis across runs:\n  fix-config / v0 (fails 2 of 2): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for v0 on this task\n    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)\n  fix-config / v1 (fails 2 of 2): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for v1 on this task\n    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)\n  lru-cache / v0 (fails 2 of 2): [confirmed] v0 run r1 failed with an answer 0.90 similar (token Jaccard) to v1 run r1's *passing* answer \u2014 the grader treated near-identical answers differently\n    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)\n  1 diagnosis(es) confirmed by executed checks against the corpus itself \u2014 no re-run needed\nReliability (repeated runs):\n  v0: 8/12 run(s) succeeded across 6 task(s); max_k=2\n    pass^k  k=1:0.667 [0.39, 0.86]  k=2:0.667 [0.15, 0.74]\n    pass@k  k=1:0.667  k=2:0.667\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks\n    outcome   consistency: 1.000 over 6/6 task(s)\n    trajectory consistency: 1.000 over 4/6 task(s)\n    resources  consistency: 0.986 over 6/6 task(s)\n    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)\n    runs advisory [insufficient]: 2 run(s) per task at the thinnest task (median 2, max 2). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.\n  v1: 10/12 run(s) succeeded across 6 task(s); max_k=2\n    pass^k  k=1:0.833 [0.55, 0.95]  k=2:0.833 [0.30, 0.91]\n    pass@k  k=1:0.833  k=2:0.833\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks\n    outcome   consistency: 1.000 over 6/6 task(s)\n    trajectory consistency: 1.000 over 5/6 task(s)\n    resources  consistency: 0.989 over 6/6 task(s)\n    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)\n    runs advisory [insufficient]: 2 run(s) per task at the thinnest task (median 2, max 2). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.",
+          "out": "agentdiff/v0-vs-v1/runs",
+          "eval": "agentdiff/v0-vs-v1/eval"
+        }
+      ]
+    },
+    {
+      "generation": 2,
+      "candidate": "reread_failure",
+      "name": "v2",
+      "signal": "stalled",
+      "proposed_by": [
+        "fix-config"
+      ],
+      "why": "runs stalled: the agent stopped making edits while the check still failed",
+      "instruction": "When the check still fails, re-read the failing assertion and the test that makes it before you answer, find the input it uses, and change the code; never conclude the test or the environment is wrong.",
+      "rounds_added": 0,
+      "current": "v1",
+      "rates": {
+        "current": {
+          "fix-average": 1.0,
+          "fix-config": 0.0,
+          "hello": 1.0,
+          "lru-cache": 1.0,
+          "parse-duration": 1.0,
+          "slugify": 1.0
+        },
+        "candidate": {
+          "fix-average": 1.0,
+          "fix-config": 1.0,
+          "hello": 1.0,
+          "lru-cache": 1.0,
+          "parse-duration": 1.0,
+          "slugify": 1.0
+        }
+      },
+      "wins": [
+        "fix-config"
+      ],
+      "losses": [],
+      "ties": [
+        "fix-average",
+        "hello",
+        "lru-cache",
+        "parse-duration",
+        "slugify"
+      ],
+      "sign_test_p": 1.0,
+      "confirm": {
+        "tasks": [
+          "fix-config"
+        ],
+        "rates": {
+          "current": {
+            "fix-config": 0.0
+          },
+          "candidate": {
+            "fix-config": 1.0
+          }
+        },
+        "wins": [
+          "fix-config"
+        ],
+        "losses": [],
+        "ties": [],
+        "sign_test_p": 1.0
+      },
+      "verdict": "kept",
+      "reason": "won fix-config, lost none, and held on the re-run",
+      "agentdiff": [
+        {
+          "pair": "v1-vs-v2",
+          "summary": "Agents: A=v1  B=v2\nPaired inference over 6 task(s): v1 minus v2 = -0.1667 \u00b1 0.1667 (95% [-0.4933, 0.16]); sign test p=1.0 \u2014 not distinguishable: only 6 paired task(s) (needs at least 10)\nRuns: {'v1': 2, 'v2': 2}\n  fix-average: A stable-pass B stable-pass | divergence none\n  fix-config: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)\n  hello: A stable-pass B stable-pass | divergence none\n  lru-cache: A stable-pass B stable-pass | divergence none\n  parse-duration: A stable-pass B stable-pass | divergence none\n  slugify: A stable-pass B stable-pass | divergence none\nv1 fails all runs on 1 task(s) (reproducible); v2 is stable on every task. Divergences are systematic on 1 of 6 task(s), so the observed gaps are behavioral, not noise.\nDiagnosis across runs:\n  fix-config / v1 (fails 2 of 2): [reproducible] divergence leads the diagnosis in all 2 diagnosed runs \u2014 the cause reproduces, not just the failure\n    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)\n  1 cause(s) reproduce across every failing run\nReliability (repeated runs):\n  v1: 10/12 run(s) succeeded across 6 task(s); max_k=2\n    pass^k  k=1:0.833 [0.55, 0.95]  k=2:0.833 [0.30, 0.91]\n    pass@k  k=1:0.833  k=2:0.833\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks\n    outcome   consistency: 1.000 over 6/6 task(s)\n    trajectory consistency: 1.000 over 5/6 task(s)\n    resources  consistency: 0.989 over 6/6 task(s)\n    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)\n    runs advisory [insufficient]: 2 run(s) per task at the thinnest task (median 2, max 2). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.\n  v2: 12/12 run(s) succeeded across 6 task(s); max_k=2\n    pass^k  k=1:1.000 [0.76, 1.00]  k=2:1.000 [0.57, 1.00]\n    pass@k  k=1:1.000  k=2:1.000\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks\n    outcome   consistency: 1.000 over 6/6 task(s)\n    trajectory consistency: 1.000 over 6/6 task(s)\n    resources  consistency: 0.977 over 6/6 task(s)\n    ICC(1): n/a (every eligible run has the same outcome, so there is no variance to partition)\n    runs advisory [insufficient]: 2 run(s) per task at the thinnest task (median 2, max 2). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.",
+          "out": "agentdiff/v1-vs-v2/runs",
+          "eval": "agentdiff/v1-vs-v2/eval"
+        }
+      ]
+    }
+  ],
+  "stopped": "every task passes every run",
+  "final": {
+    "name": "openagent-evolved",
+    "preamble": true,
+    "reveal_check": true,
+    "rounds": 3,
+    "attempts": 1,
+    "instructions": [
+      "Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check.",
+      "When the check still fails, re-read the failing assertion and the test that makes it before you answer, find the input it uses, and change the code; never conclude the test or the environment is wrong."
+    ]
+  },
+  "history": [
+    {
+      "version": "v0",
+      "harness": {
+        "name": "v0",
+        "preamble": true,
+        "reveal_check": true,
+        "rounds": 3,
+        "attempts": 1,
+        "instructions": []
+      },
+      "rates": {
+        "fix-average": 1.0,
+        "fix-config": 0.0,
+        "hello": 1.0,
+        "lru-cache": 0.0,
+        "parse-duration": 1.0,
+        "slugify": 1.0
+      }
+    },
+    {
+      "version": "v1",
+      "harness": {
+        "name": "v1",
+        "preamble": true,
+        "reveal_check": true,
+        "rounds": 3,
+        "attempts": 1,
+        "instructions": [
+          "Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check."
+        ]
+      },
+      "rates": {
+        "fix-average": 1.0,
+        "fix-config": 0.0,
+        "hello": 1.0,
+        "lru-cache": 1.0,
+        "parse-duration": 1.0,
+        "slugify": 1.0
+      }
+    },
+    {
+      "version": "v2",
+      "harness": {
+        "name": "v2",
+        "preamble": true,
+        "reveal_check": true,
+        "rounds": 3,
+        "attempts": 1,
+        "instructions": [
+          "Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check.",
+          "When the check still fails, re-read the failing assertion and the test that makes it before you answer, find the input it uses, and change the code; never conclude the test or the environment is wrong."
+        ]
+      },
+      "rates": {
+        "fix-average": 1.0,
+        "fix-config": 1.0,
+        "hello": 1.0,
+        "lru-cache": 1.0,
+        "parse-duration": 1.0,
+        "slugify": 1.0
+      }
+    }
+  ]
+}

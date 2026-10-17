@@ -71,6 +71,13 @@ def test_command_shape():
     assert "--auto" not in OpenCode(auto=False).command("x")
 
 
+def test_relative_binary_resolves_from_where_openagent_started(fake, tmp_path, monkeypatch):
+    oc = fake("good")
+    monkeypatch.chdir(Path(oc.binary).parent)
+    rel = OpenCode(binary="./" + Path(oc.binary).name)
+    assert rel.binary == oc.binary and solve("t", ws(tmp_path), CHECK, rel).passed
+
+
 def test_missing_binary(tmp_path):
     r = OpenCode(binary=str(tmp_path / "nope")).run("x", tmp_path)
     assert r.exit_code == 127 and "not found" in r.stats.errors[0]
@@ -161,6 +168,18 @@ def test_crash_without_check_fails(fake, tmp_path):
 def test_provider_error_stops_instead_of_repairing(fake, tmp_path):
     out = solve("t", ws(tmp_path), CHECK, fake("crash"), Strategy(rounds=3))
     assert not out.passed and len(fake.calls()) == 1
+
+
+def test_empty_run_is_retried_once(fake, tmp_path):
+    out = solve("t", ws(tmp_path), CHECK, fake("silent-once"), Strategy(rounds=3))
+    a = out.attempts[0]
+    assert out.passed and len(fake.calls()) == 2 and a.rounds[0].retried and len(a.rounds) == 1
+
+
+def test_empty_twice_is_infra_error(fake, tmp_path):
+    out = solve("t", ws(tmp_path), CHECK, fake("silent"), Strategy(rounds=3))
+    a = out.attempts[0]
+    assert a.stop == "infra_error" and len(fake.calls()) == 2 and "no output twice" in a.rounds[0].stats.errors[0]
 
 
 def test_missing_binary_stops_early(tmp_path):
@@ -457,3 +476,137 @@ def test_demo_end_to_end_with_real_opencode(tmp_path, monkeypatch):
     assert code == 0 and got == {("hello", "baseline"): True, ("hello", "openagent"): True,
                                  ("fix-average", "baseline"): False, ("fix-average", "openagent"): True}
     assert list(tmp_path.iterdir()) == [tmp_path / "demo"]  # nothing leaked outside the workspaces
+
+
+# --- v0.4: evolve ------------------------------------------------------------------------------
+
+def test_signals_from_run_records():
+    from openagent.evolve import signals
+    recs = [
+        {"task": "a", "passed": False, "check_passed": True, "graded": False, "stop": "passed", "attempts": []},
+        {"task": "b", "passed": False, "check_passed": False, "stop": "stalled", "attempts": []},
+        {"task": "c", "passed": False, "check_passed": False, "stop": "rounds_exhausted",
+         "attempts": [{"rounds": [{"tampered": ["tests/x.py"]}]}]},
+        {"task": "d", "passed": False, "check_passed": False, "stop": "infra_error", "attempts": []},
+    ]
+    assert signals(recs) == {"held_out_fail": ["a"], "stalled": ["b"], "check_failed": ["b", "c"],
+                             "rounds_exhausted": ["c"], "tampered": ["c"]}
+
+
+def test_propose_orders_by_signal_strength_and_skips_tried():
+    from openagent.evolve import propose
+    sigs = {"stalled": ["x"], "check_failed": ["x", "y"], "held_out_fail": ["z"]}
+    ids = [c.id for c, _ in propose(sigs, set(), PRESETS["openagent"])]
+    assert ids == ["read_tests_first", "edge_cases", "write_tests", "reread_failure"]
+    assert "read_tests_first" not in [c.id for c, _ in propose(sigs, {"read_tests_first"}, PRESETS["openagent"])]
+
+
+def test_keep_rule_and_compare():
+    from openagent.evolve import _keep, compare
+    assert _keep(compare({"a": 0, "b": 1}, {"a": 1, "b": 1}))
+    assert not _keep(compare({"a": 0, "b": 1}, {"a": 1, "b": 0}))  # breaks a task
+    assert not _keep(compare({"a": 1}, {"a": 1}))                  # moves nothing
+
+
+def test_harness_file_round_trip(tmp_path):
+    s = Strategy("h", rounds=5, instructions=("Mind every edge case.",))
+    (tmp_path / "h.json").write_text(json.dumps(s.to_dict()))
+    loaded = Strategy.load(tmp_path / "h.json")
+    assert loaded == s and "- Mind every edge case." in first_prompt("t", None, loaded)
+    assert "Rules:\n- x" in first_prompt("t", None, Strategy(preamble=False, instructions=("x",)))
+
+
+def test_evolve_keeps_the_change_the_signal_names(fake, tmp_path):
+    from openagent.evolve import evolve
+    tasks = [Task("t", "write hello", check="test -f hello.txt", grade=CHECK)]
+    ledger = evolve(tasks, PRESETS["openagent"], fake("edgy"), tmp_path / "evo", generations=3)
+    (g1,) = ledger["generations"]
+    assert g1["candidate"] == "edge_cases" and g1["signal"] == "held_out_fail" and g1["verdict"] == "kept"
+    assert g1["confirm"]["wins"] == ["t"] and ledger["stopped"] == "every task passes every run"
+    h = json.loads((tmp_path / "evo" / "harness.json").read_text())
+    assert any("edge case" in i for i in h["instructions"]) and h["name"] == "openagent-evolved"
+    assert "kept" in (tmp_path / "evo" / "EVOLUTION.md").read_text()
+    # the current harness's traces are carried beside the candidate's for AgentDiff
+    assert (tmp_path / "evo" / "gen-1" / "traces" / "v0").is_dir() and (tmp_path / "evo" / "gen-1" / "traces" / "v1").is_dir()
+
+
+def test_evolve_reverts_and_stops_without_signal(fake, tmp_path):
+    from openagent.evolve import evolve
+    tasks = [Task("t", "write hello", check=CHECK)]
+    ledger = evolve(tasks, PRESETS["openagent"], fake("never"), tmp_path / "evo", generations=5)
+    verdicts = {g["candidate"]: g["verdict"] for g in ledger["generations"]}
+    assert verdicts and set(verdicts.values()) == {"reverted"}
+    assert ledger["stopped"].startswith("no signal names an untried change")
+    assert json.loads((tmp_path / "evo" / "harness.json").read_text())["instructions"] == []
+
+
+def test_cli_run_with_harness(fake, tmp_path):
+    oc = fake("edgy")
+    h = tmp_path / "h.json"
+    h.write_text(json.dumps(Strategy("x", instructions=("Mind every edge case.",)).to_dict()))
+    assert main(["run", "x", "-C", str(ws(tmp_path)), "-c", CHECK, "--binary", oc.binary, "--harness", str(h)]) == 0
+
+
+# --- v0.4: tasks from git history ----------------------------------------------------------------
+
+def _git_repo(tmp_path):
+    import subprocess
+    r = tmp_path / "repo"
+    r.mkdir()
+    g = lambda *a: subprocess.run(["git", "-C", str(r), *a], check=True, capture_output=True)  # noqa: E731
+    g("init", "-q")
+    g("config", "user.email", "t@example.com")
+    g("config", "user.name", "t")
+    (r / "calc.py").write_text("def add(a, b):\n    return a + b\n")
+    (r / "tests").mkdir()
+    (r / "tests" / "test_add.py").write_text("from calc import add\n\ndef test_add():\n    assert add(1, 2) == 3\n")
+    g("add", "-A"); g("commit", "-qm", "initial")
+    # a real task: code and a new test that fails on the parent
+    (r / "calc.py").write_text("def add(a, b):\n    return a + b\n\n\ndef sub(a, b):\n    return a - b\n")
+    (r / "tests" / "test_sub.py").write_text("from calc import sub\n\ndef test_sub():\n    assert sub(3, 1) == 2\n")
+    g("add", "-A"); g("commit", "-qm", "Add sub()\n\nCo-Authored-By: x <x@example.com>")
+    # not a task: its test already passes on the parent
+    (r / "calc.py").write_text((r / "calc.py").read_text() + "\n# tidy\n")
+    (r / "tests" / "test_add2.py").write_text("from calc import add\n\ndef test_add2():\n    assert add(2, 2) == 4\n")
+    g("add", "-A"); g("commit", "-qm", "Tidy and test add")
+    # not a candidate: docs only
+    (r / "README.md").write_text("calc\n")
+    g("add", "-A"); g("commit", "-qm", "Docs")
+    return r
+
+
+TEST_CMD = f"{sys.executable} -m pytest -q -p no:cacheprovider {{tests}}"
+
+
+def test_from_git_validates_and_writes_tasks(tmp_path):
+    from openagent.gittasks import build
+    report = build(_git_repo(tmp_path), tmp_path / "tasks", TEST_CMD)
+    assert [t["subject"] for t in report["taken"]] == ["Add sub()"]
+    assert [s["why"] for s in report["skipped"]] == ["its tests already pass on the parent: nothing to do"]
+    (task,) = discover(tmp_path / "tasks")
+    assert "Add sub()" in task.prompt and "Co-Authored-By" not in task.prompt and "not given to you" in task.prompt
+    assert not (task.files / "tests" / "test_sub.py").exists()      # held out
+    assert "def sub" not in (task.files / "calc.py").read_text()     # starts from the parent
+    assert task.grade.startswith("cp -r ") and "test_sub.py" in task.grade
+    assert (tmp_path / "tasks" / "from-git.json").is_file()
+
+
+def test_from_git_grade_fails_on_parent_and_passes_with_the_fix(tmp_path):
+    from openagent.gittasks import build
+    build(_git_repo(tmp_path), tmp_path / "tasks", TEST_CMD)
+    (task,) = discover(tmp_path / "tasks")
+    import shutil as sh
+    w = tmp_path / "w"
+    sh.copytree(task.files, w)
+    assert not run_check(task.grade, w).passed
+    (w / "calc.py").write_text((w / "calc.py").read_text() + "\n\ndef sub(a, b):\n    return a - b\n")
+    assert run_check(task.grade, w).passed
+
+
+def test_from_git_reveal_tests(tmp_path):
+    from openagent.gittasks import build
+    build(_git_repo(tmp_path), tmp_path / "tasks", TEST_CMD, reveal=True)
+    (task,) = discover(tmp_path / "tasks")
+    assert (task.files / "tests" / "test_sub.py").exists() and task.grade is None
+    assert "test_sub.py" in task.check and task.protect == ["tests/test_sub.py"]
+    assert "already in the repository" in task.prompt

@@ -31,10 +31,19 @@ def emit(kind, **data):
 
 
 mode = os.environ.get("FAKE_MODE", "good")
+if mode == "silent" or (mode == "silent-once" and not os.path.exists(cwd / ".spoke")):
+    # print nothing at all, as OpenCode did when it failed at start-up
+    if mode == "silent-once":
+        (cwd / ".spoke").write_text("")
+    sys.exit(0)
+if mode == "silent-once":
+    mode = "good"
 emit("step_start", part={"type": "step-start"})
 if mode == "crash":
     emit("error", error={"name": "ProviderError", "data": {"message": "model unavailable"}})
     sys.exit(1)
+if mode == "edgy":  # does the job properly only when told to mind every edge case
+    mode = "good" if "edge case" in args[-1] else "never"
 if mode == "good" or (mode == "repair" and session):
     content = "hi"
 elif mode == "flaky":

@@ -1,0 +1,187 @@
+{
+ "schema_version": 1,
+ "trace_id": "hello__openagent-evolved__r2",
+ "agent": {
+  "name": "openagent-evolved",
+  "model": "scripted/coder",
+  "version": "openagent-0.3.0",
+  "system_prompt": "You are working autonomously in this repository. No human will answer questions, so make reasonable assumptions and keep going.\n- Start by reading the code relevant to the task; do not guess at structure.\n- Make the smallest change that fully solves the task, matching the existing style.\n- Before you finish, run the relevant tests or checks yourself and fix any failures.\n- Never weaken, skip or delete tests or checks to make them pass.\n- Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check.\n- When the check still fails, re-read the failing assertion and the test that makes it before you answer, find the input it uses, and change the code; never conclude the test or the environment is wrong.",
+  "config": {
+   "name": "openagent-evolved",
+   "preamble": true,
+   "reveal_check": true,
+   "rounds": 3,
+   "attempts": 1,
+   "instructions": [
+    "Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check.",
+    "When the check still fails, re-read the failing assertion and the test that makes it before you answer, find the input it uses, and change the code; never conclude the test or the environment is wrong."
+   ],
+   "check": "grep -qx hi hello.txt"
+  }
+ },
+ "task": {
+  "id": "hello",
+  "prompt": "Create a file named hello.txt containing exactly: hi",
+  "expected": null
+ },
+ "outcome": {
+  "success": true,
+  "answer": "check passed after 0 repair(s)",
+  "score": 1.0,
+  "termination": "agent_stop"
+ },
+ "totals": {
+  "input_tokens": 5290,
+  "output_tokens": 37,
+  "cost_usd": 0.0,
+  "latency_s": 4.458
+ },
+ "harness": {
+  "adapter": "openagent 0.3.0",
+  "graded_by": "check",
+  "stop": "passed",
+  "repairs": 0,
+  "opencode_retries": 0,
+  "changes": {
+   "added": [
+    "hello.txt"
+   ],
+   "modified": [],
+   "deleted": []
+  },
+  "note": "SYNTHETIC: OpenCode ran for real, with its own tools and sessions, but the model was a scripted playbook (openagent.sim), not an LLM. These numbers show the workflow, not how well any model or strategy does: the playbooks decide that."
+ },
+ "tools": [
+  {
+   "name": "apply_patch",
+   "effect": "write"
+  },
+  {
+   "name": "bash",
+   "effect": null
+  },
+  {
+   "name": "codesearch",
+   "effect": "read"
+  },
+  {
+   "name": "edit",
+   "effect": "write"
+  },
+  {
+   "name": "glob",
+   "effect": "read"
+  },
+  {
+   "name": "grep",
+   "effect": "read"
+  },
+  {
+   "name": "list",
+   "effect": "read"
+  },
+  {
+   "name": "multiedit",
+   "effect": "write"
+  },
+  {
+   "name": "openagent.check",
+   "effect": "read"
+  },
+  {
+   "name": "openagent.guard",
+   "effect": "write"
+  },
+  {
+   "name": "patch",
+   "effect": "write"
+  },
+  {
+   "name": "question",
+   "effect": null
+  },
+  {
+   "name": "read",
+   "effect": "read"
+  },
+  {
+   "name": "skill",
+   "effect": "read"
+  },
+  {
+   "name": "task",
+   "effect": null
+  },
+  {
+   "name": "todoread",
+   "effect": "read"
+  },
+  {
+   "name": "todowrite",
+   "effect": "write"
+  },
+  {
+   "name": "webfetch",
+   "effect": "read"
+  },
+  {
+   "name": "websearch",
+   "effect": "read"
+  },
+  {
+   "name": "write",
+   "effect": "write"
+  }
+ ],
+ "steps": [
+  {
+   "type": "tool_call",
+   "name": "write",
+   "input": "{\"content\": \"hi\\n\", \"filePath\": \"/tmp/openagent-hello-le38_rol/ws/hello.txt\"}",
+   "output": "Wrote file successfully.",
+   "error": false,
+   "effect": "write",
+   "tokens": 2668,
+   "latency_s": 0.043,
+   "started_s": 0.0,
+   "input_tokens": 2642,
+   "output_tokens": 26,
+   "cached_tokens": 0,
+   "index": 0
+  },
+  {
+   "type": "reason",
+   "name": "text",
+   "input": "",
+   "output": "Created hello.txt containing hi.",
+   "tokens": 2659,
+   "latency_s": 0.0,
+   "started_s": 0.157,
+   "input_tokens": 2648,
+   "output_tokens": 11,
+   "cached_tokens": 0,
+   "index": 1
+  },
+  {
+   "type": "tool_call",
+   "name": "openagent.check",
+   "input": "grep -qx hi hello.txt",
+   "output": "exit 0\n",
+   "tokens": 0,
+   "latency_s": 0.005,
+   "error": false,
+   "effect": "read",
+   "note": "check passed",
+   "index": 2
+  },
+  {
+   "type": "answer",
+   "name": "answer",
+   "input": "",
+   "output": "Created hello.txt containing hi.",
+   "tokens": 0,
+   "latency_s": 0.0,
+   "index": 3
+  }
+ ]
+}

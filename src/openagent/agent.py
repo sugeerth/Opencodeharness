@@ -55,6 +55,22 @@ class Strategy:
     reveal_check: bool = True    # tell the agent the check command
     rounds: int = 3              # repair rounds after the first try
     attempts: int = 1            # independent parallel attempts (best-of-N)
+    instructions: tuple[str, ...] = ()   # extra rules, e.g. ones `openagent evolve` kept
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "preamble": self.preamble, "reveal_check": self.reveal_check,
+                "rounds": self.rounds, "attempts": self.attempts, "instructions": list(self.instructions)}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Strategy":
+        known = {k: d[k] for k in ("name", "preamble", "reveal_check", "rounds", "attempts") if k in d}
+        return cls(**known, instructions=tuple(d.get("instructions", ())))
+
+    @classmethod
+    def load(cls, path: str | Path) -> "Strategy":
+        """A harness file: the JSON `openagent evolve` writes (harness.json), or one written by hand."""
+        import json
+        return cls.from_dict(json.loads(Path(path).read_text()))
 
 
 PRESETS = {
@@ -75,12 +91,15 @@ class Round:
     prompt: str = ""
     events: list[dict] = field(default_factory=list)
     changed: list[str] = field(default_factory=list)   # files this round changed
+    stderr: str = ""
+    retried: bool = False                               # OpenCode printed nothing and was run again
 
     def to_dict(self) -> dict:
         return {"exit_code": self.exit_code, "seconds": round(self.seconds, 2), "stats": self.stats.to_dict(),
                 "check": None if self.check is None else {"passed": self.check.passed, "exit_code": self.check.exit_code,
                                                           "seconds": round(self.check.seconds, 2)},
-                "tampered": self.tampered, "changed": self.changed}
+                "tampered": self.tampered, "changed": self.changed, "stderr": self.stderr[-1500:],
+                "retried": self.retried}
 
 
 @dataclass
@@ -153,8 +172,11 @@ Log = Callable[[str], None]
 
 def first_prompt(task: str, check: str | None, strategy: Strategy) -> str:
     parts = []
+    rules = "".join(f"\n- {i}" for i in strategy.instructions)
     if strategy.preamble:
-        parts.append(PREAMBLE)
+        parts.append(PREAMBLE + rules)
+    elif rules:
+        parts.append("Rules:" + rules)
     if check and strategy.reveal_check:
         parts.append(CHECK_HINT.format(check=check))
     parts.append(("Task:\n" if parts else "") + task)
@@ -192,6 +214,14 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
     for n in range(strategy.rounds + 1):
         log(f"{'run' if n == 0 else f'repair {n}/{strategy.rounds}'}: opencode")
         run = oc.run(prompt, workspace, session)
+        retried = False
+        if run.empty and run.exit_code != 127:
+            log(f"opencode produced no output (exit {run.exit_code}); retrying once"
+                + (f": {run.stderr.strip()[-200:]}" if run.stderr.strip() else ""))
+            run, retried = oc.run(prompt, workspace, session), True
+            if run.empty and not run.stats.errors:
+                run.stats.errors.append("OpenCode produced no output twice"
+                                        + (f": {run.stderr.strip()[-300:]}" if run.stderr.strip() else ""))
         session = run.stats.session_id or session
         tampered = guard.restore() if guard else []
         if tampered:
@@ -200,7 +230,8 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
         changed = [p for group in changes(prev, now).values() for p in group]
         prev = now
         cr = run_check(check, workspace, check_timeout) if check else None
-        result.rounds.append(Round(run.exit_code, run.seconds, run.stats, cr, tampered, prompt, run.events, changed))
+        result.rounds.append(Round(run.exit_code, run.seconds, run.stats, cr, tampered, prompt, run.events, changed,
+                                   run.stderr, retried))
         if run.infra_failure:
             log(f"opencode failed before the model ran: {run.stats.errors[0]}")
             return finish("infra_error")

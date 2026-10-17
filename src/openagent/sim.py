@@ -10,7 +10,10 @@ A playbook is `sim.json` beside a task's prompt.txt:
    "verify": [action, ...],   # appended to the first turn when the prompt asks the model to run
                               #   the tests before finishing (Open Agent's guidance does)
    "repair": [[action, ...],  # the turn after Open Agent's 1st repair message, 2nd, ...
-              [action, ...]]}
+              [action, ...]],
+   "when":   {"phrase": {...}}  # sections that replace the above when the prompt contains the phrase,
+                                #   e.g. an instruction `openagent evolve` added
+  }
 
 An action is one of
   {"read": "path"}                              # read a file
@@ -41,12 +44,23 @@ class Playbook:
     verify: list[dict] = field(default_factory=list)
     repair: list[list[dict]] = field(default_factory=list)
     root: Path | None = None
+    when: dict = field(default_factory=dict)
 
     @classmethod
     def load(cls, task_dir: Path) -> "Playbook":
         d = json.loads((task_dir / "sim.json").read_text())
         return cls((task_dir / "prompt.txt").read_text().strip(), d.get("first", []), d.get("verify", []),
-                   d.get("repair", []), task_dir)
+                   d.get("repair", []), task_dir, d.get("when", {}))
+
+    def under(self, conversation: str) -> "Playbook":
+        """The playbook as it plays when the prompt contains an instruction it reacts to: each phrase
+        in "when" that appears in the conversation replaces the sections it names."""
+        pb = self
+        for phrase, override in self.when.items():
+            if phrase in conversation:
+                pb = Playbook(pb.prompt, override.get("first", pb.first), override.get("verify", pb.verify),
+                              override.get("repair", pb.repair), pb.root, {})
+        return pb
 
 
 def _text(content) -> str:
@@ -91,6 +105,7 @@ class Policy:
         pb = self.find(users)
         if pb is None:
             return {"text": "I don't have a playbook for this task."}
+        pb = pb.under("\n".join(users))
         last_user = users[-1]
         done = sum(1 for m in msgs[user_idx[-1] + 1:] if m.get("role") == "assistant")
         if REPAIR_MARK in last_user:

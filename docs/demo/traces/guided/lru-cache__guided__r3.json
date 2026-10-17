@@ -7,10 +7,12 @@
   "version": "openagent-0.3.0",
   "system_prompt": "You are working autonomously in this repository. No human will answer questions, so make reasonable assumptions and keep going.\n- Start by reading the code relevant to the task; do not guess at structure.\n- Make the smallest change that fully solves the task, matching the existing style.\n- Before you finish, run the relevant tests or checks yourself and fix any failures.\n- Never weaken, skip or delete tests or checks to make them pass.",
   "config": {
+   "name": "guided",
    "preamble": true,
    "reveal_check": true,
    "rounds": 0,
    "attempts": 1,
+   "instructions": [],
    "check": "python3 -m unittest discover -s tests -q"
   }
  },
@@ -29,13 +31,14 @@
   "input_tokens": 10704,
   "output_tokens": 235,
   "cost_usd": 0.0,
-  "latency_s": 6.76
+  "latency_s": 5.805
  },
  "harness": {
   "adapter": "openagent 0.3.0",
   "graded_by": "grade",
   "stop": "passed",
   "repairs": 0,
+  "opencode_retries": 0,
   "changes": {
    "added": [],
    "modified": [
@@ -43,7 +46,7 @@
    ],
    "deleted": []
   },
-  "grade_output": "----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n======================================================================\nFAIL: test_operations_are_constant_time (test_lru_hidden.HiddenLRUTest.test_operations_are_constant_time)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/tmp/openagent-lru-cache-8rhduqkr/ws/test_lru_hidden.py\", line 14, in test_operations_are_constant_time\n    self.assertLess(time.perf_counter() - start, 1.0, \"40k operations should take well under a second\")\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 9.32307475799962 not less than 1.0 : 40k operations should take well under a second\n\n----------------------------------------------------------------------\nRan 1 test in 9.329s\n\nFAILED (failures=1)",
+  "grade_output": "----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n======================================================================\nFAIL: test_operations_are_constant_time (test_lru_hidden.HiddenLRUTest.test_operations_are_constant_time)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/tmp/openagent-lru-cache-uz9gk3m1/ws/test_lru_hidden.py\", line 14, in test_operations_are_constant_time\n    self.assertLess(time.perf_counter() - start, 1.0, \"40k operations should take well under a second\")\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 5.709022784000126 not less than 1.0 : 40k operations should take well under a second\n\n----------------------------------------------------------------------\nRan 1 test in 5.710s\n\nFAILED (failures=1)",
   "note": "SYNTHETIC: OpenCode ran for real, with its own tools and sessions, but the model was a scripted playbook (openagent.sim), not an LLM. These numbers show the workflow, not how well any model or strategy does: the playbooks decide that."
  },
  "tools": [
@@ -132,12 +135,12 @@
   {
    "type": "tool_call",
    "name": "read",
-   "input": "{\"filePath\": \"/tmp/openagent-lru-cache-8rhduqkr/ws/lru.py\"}",
-   "output": "<path>/tmp/openagent-lru-cache-8rhduqkr/ws/lru.py</path>\n<type>file</type>\n<content>\n1: class LRUCache:\n2:     def __init__(self, capacity: int):\n3:         raise NotImplementedError\n4: \n5:     def get(self, key):\n6:         raise NotImplementedError\n7: \n8:     def put(self, key, value):\n9:         raise NotImplementedError\n\n(End of file - total 9 lines)\n</content>",
+   "input": "{\"filePath\": \"/tmp/openagent-lru-cache-uz9gk3m1/ws/lru.py\"}",
+   "output": "<path>/tmp/openagent-lru-cache-uz9gk3m1/ws/lru.py</path>\n<type>file</type>\n<content>\n1: class LRUCache:\n2:     def __init__(self, capacity: int):\n3:         raise NotImplementedError\n4: \n5:     def get(self, key):\n6:         raise NotImplementedError\n7: \n8:     def put(self, key, value):\n9:         raise NotImplementedError\n\n(End of file - total 9 lines)\n</content>",
    "error": false,
    "effect": "read",
    "tokens": 2619,
-   "latency_s": 0.002,
+   "latency_s": 0.075,
    "started_s": 0.0,
    "input_tokens": 2598,
    "output_tokens": 21,
@@ -147,13 +150,13 @@
   {
    "type": "tool_call",
    "name": "write",
-   "input": "{\"content\": \"class LRUCache:\\n    def __init__(self, capacity: int):\\n        self.capacity = capacity\\n        self.data = {}\\n        self.order = []\\n\\n    def _touch(self, key):\\n        if key in self.order:\\n            self.order.remove(key)\\n        self.order.append(key)\\n\\n    def get(self, key):\\n        if key not in self.data:\\n            return None\\n        self._touch(key)\\n        return self.data[key]\\n\\n    def put(self, key, value):\\n        self.data[key] = value\\n        self._touch(key)\\n        if len(self.order) > self.capacity:\\n            del self.data[self.order.pop(0)]\\n\", \"filePath\": \"/tmp/openagent-lru-cache-8rhduqkr/ws/lru.py\"}",
+   "input": "{\"content\": \"class LRUCache:\\n    def __init__(self, capacity: int):\\n        self.capacity = capacity\\n        self.data = {}\\n        self.order = []\\n\\n    def _touch(self, key):\\n        if key in self.order:\\n            self.order.remove(key)\\n        self.order.append(key)\\n\\n    def get(self, key):\\n        if key not in self.data:\\n            return None\\n        self._touch(key)\\n        return self.data[key]\\n\\n    def put(self, key, value):\\n        self.data[key] = value\\n        self._touch(key)\\n        if len(self.order) > self.capacity:\\n            del self.data[self.order.pop(0)]\\n\", \"filePath\": \"/tmp/openagent-lru-cache-uz9gk3m1/ws/lru.py\"}",
    "output": "Wrote file successfully.",
    "error": false,
    "effect": "write",
    "tokens": 2864,
-   "latency_s": 0.0,
-   "started_s": 0.582,
+   "latency_s": 0.071,
+   "started_s": 0.182,
    "input_tokens": 2690,
    "output_tokens": 174,
    "cached_tokens": 0,
@@ -166,8 +169,8 @@
    "output": "----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
    "error": false,
    "tokens": 2724,
-   "latency_s": 0.36,
-   "started_s": 1.24,
+   "latency_s": 0.408,
+   "started_s": 0.319,
    "input_tokens": 2696,
    "output_tokens": 28,
    "cached_tokens": 0,
@@ -180,7 +183,7 @@
    "output": "Implemented LRUCache; the tests pass.",
    "tokens": 2732,
    "latency_s": 0.0,
-   "started_s": 1.866,
+   "started_s": 0.885,
    "input_tokens": 2720,
    "output_tokens": 12,
    "cached_tokens": 0,
@@ -192,7 +195,7 @@
    "input": "python3 -m unittest discover -s tests -q",
    "output": "exit 0\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK",
    "tokens": 0,
-   "latency_s": 0.066,
+   "latency_s": 0.081,
    "error": false,
    "effect": "read",
    "note": "check passed",

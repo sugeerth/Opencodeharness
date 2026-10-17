@@ -3,6 +3,7 @@
   openagent run "fix the failing test" --check "pytest -q"
   openagent bench examples/tasks --preset baseline --preset openagent --agentdiff
   openagent demo        # the whole workflow, offline: real OpenCode, scripted model, AgentDiff evals
+  openagent evolve examples/tasks -m anthropic/claude-sonnet-5-5   # a harness that improves itself
 """
 import argparse
 import json
@@ -12,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 from . import __version__
-from .agent import PRESETS, solve, with_overrides
+from .agent import PRESETS, Strategy, solve, with_overrides
 from .bench import agentdiff_eval, run_bench, summarize, write_reports
 from .opencode import OpenCode
 from .tasks import discover
@@ -45,6 +46,9 @@ def _strategy_args(p: argparse.ArgumentParser) -> None:
     g.add_argument("--attempts", type=int, help="parallel attempts; the passing one with fewest rounds wins")
     g.add_argument("--no-preamble", action="store_true", help="send the task without autonomy guidance")
     g.add_argument("--hide-check", action="store_true", help="don't tell the agent the check command")
+    g.add_argument("--harness", metavar="FILE",
+                   help="a harness file, e.g. the harness.json `openagent evolve` writes "
+                        "(run: use it; bench/demo: add it to the strategies compared)")
 
 
 def _make_oc(a, env=None) -> OpenCode:
@@ -63,7 +67,7 @@ def cmd_run(a) -> int:
     if not task:
         log("no task given")
         return 2
-    strategy = _override(PRESETS[a.preset], a)
+    strategy = _override(Strategy.load(a.harness) if a.harness else PRESETS[a.preset], a)
     if not a.check:
         log("no --check given: OpenCode runs once with no verification or repair")
     out = solve(task, a.dir, a.check, _make_oc(a), strategy, a.protect, a.check_timeout, log, a.max_cost)
@@ -103,14 +107,51 @@ def _bench(tasks, strategies, oc, a, synthetic=None) -> int:
 
 
 def cmd_bench(a) -> int:
-    tasks = discover(a.tasks)
-    if a.only:
-        tasks = [t for t in tasks if t.name in set(a.only)]
+    tasks = _tasks(a)
     if not tasks:
         log(f"no tasks found in {a.tasks}")
         return 2
-    strategies = [_override(PRESETS[p], a) for p in (a.preset or ["baseline", "openagent"])]
-    return _bench(tasks, strategies, _make_oc(a), a)
+    return _bench(tasks, _strategies(a, ["baseline", "openagent"]), _make_oc(a), a)
+
+
+def _strategies(a, default: list[str]) -> list[Strategy]:
+    strategies = [_override(PRESETS[p], a) for p in (a.preset or ([] if a.harness else default))]
+    if a.harness:
+        h = Strategy.load(a.harness)
+        if not any(s.name == "baseline" for s in strategies):
+            strategies.insert(0, PRESETS["baseline"])
+        strategies.append(_override(h, a))
+    return strategies
+
+
+def _tasks(a) -> list:
+    tasks = discover(a.tasks)
+    if a.only:
+        tasks = [t for t in tasks if t.name in set(a.only)]
+    return tasks
+
+
+def cmd_evolve(a) -> int:
+    tasks = _tasks(a)
+    if not tasks:
+        log(f"no tasks found in {a.tasks}")
+        return 2
+    return _evolve(tasks, _make_oc(a), a)
+
+
+def _evolve(tasks, oc, a, synthetic=None) -> int:
+    from .evolve import evolve
+    base = _override(Strategy.load(a.harness) if a.harness else PRESETS["openagent"], a)
+    ledger = evolve(tasks, base, oc, a.out, a.generations, a.repeat, a.jobs, log, synthetic, a.agentdiff)
+    print()
+    for h in ledger["history"]:
+        print(f"{h['version']:<4} {sum(h['rates'].values()):g}/{len(h['rates'])} tasks passing")
+    for e in ledger["generations"]:
+        print(f"gen {e['generation']}: {e['candidate']:<16} {e['verdict']:<9} {e['reason']}")
+    print(f"stopped: {ledger.get('stopped', '')}")
+    log(f"wrote {Path(a.out) / 'EVOLUTION.md'}, evolution.json and harness.json "
+        f"(use it: openagent run --harness {Path(a.out) / 'harness.json'} ...)")
+    return 0
 
 
 def cmd_demo(a) -> int:
@@ -123,17 +164,28 @@ def cmd_demo(a) -> int:
         log(f"no tasks at {root}. The demo's tasks live in the repository: git clone "
             "https://github.com/sugeerth/Opencodeharness && cd Opencodeharness && pip install -e .")
         return 2
-    tasks = [t for t in discover(root) if (root / t.name / "sim.json").is_file()]
-    if a.only:
-        tasks = [t for t in tasks if t.name in set(a.only)]
+    tasks = [t for t in _tasks(a) if (root / t.name / "sim.json").is_file()]
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    strategies = [_override(PRESETS[p], a) for p in (a.preset or ["baseline", "guided", "openagent"])]
     with tempfile.TemporaryDirectory(prefix="openagent-sim-") as cfg, \
             ScriptedModel([root / t.name for t in tasks], Path(cfg)) as sim:
         log(f"scripted model serving at {sim.url}; OpenCode will use {sim.MODEL}")
         a.model = sim.MODEL
-        return _bench(tasks, strategies, _make_oc(a, sim.env()), a, SYNTHETIC)
+        oc = _make_oc(a, sim.env())
+        if a.evolve:
+            a.generations = a.evolve
+            return _evolve(tasks, oc, a, SYNTHETIC)
+        return _bench(tasks, _strategies(a, ["baseline", "guided", "openagent"]), oc, a, SYNTHETIC)
+
+
+def cmd_tasks_from_git(a) -> int:
+    from .gittasks import build
+    report = build(a.repo, a.out, a.test_cmd, a.max, a.look, a.reveal_tests, a.setup, a.timeout, a.branch, log)
+    print(f"{len(report['taken'])} task(s) written to {a.out}; {len(report['skipped'])} commit(s) skipped "
+          f"(reasons in {Path(a.out) / 'from-git.json'})")
+    for t in report["taken"]:
+        print(f"  {t['task']}")
+    return 0 if report["taken"] else 1
 
 
 def cmd_presets(_a) -> int:
@@ -183,10 +235,36 @@ def main(argv=None) -> int:
 
     d = sub.add_parser("demo", help="run the whole workflow offline: real OpenCode, a scripted model, AgentDiff evals")
     d.add_argument("--tasks", default=str(EXAMPLES), help="tasks with sim.json playbooks (default: the examples)")
+    d.add_argument("--evolve", type=int, metavar="N", help="evolve the harness for N generations instead of benchmarking")
     _bench_args(d, "demo-results")
     _opencode_args(d)
     _strategy_args(d)
     d.set_defaults(fn=cmd_demo)
+
+    e = sub.add_parser("evolve", help="improve the harness on your tasks, keeping a change only when the runs say it helped")
+    e.add_argument("tasks", help="directory of tasks (see examples/tasks)")
+    e.add_argument("-g", "--generations", type=int, default=5, help="changes to try at most (default 5)")
+    _bench_args(e, "evolution")
+    _opencode_args(e)
+    _strategy_args(e)
+    e.set_defaults(fn=cmd_evolve)
+
+    t = sub.add_parser("tasks", help="make benchmark tasks")
+    tsub = t.add_subparsers(dest="tasks_cmd", required=True)
+    fg = tsub.add_parser("from-git", help="tasks from a repository's history: the commit's tests grade the change")
+    fg.add_argument("repo", help="path or URL of a git repository")
+    fg.add_argument("-o", "--out", default="tasks", help="output directory (default: tasks)")
+    fg.add_argument("--test-cmd", default="python3 -m pytest -q",
+                    help="the project's test command; {tests} is replaced by the test files, else they are appended "
+                         "(default: python3 -m pytest -q)")
+    fg.add_argument("-n", "--max", type=int, default=10, help="tasks to make at most (default 10)")
+    fg.add_argument("--look", type=int, default=200, help="commits to look at (default 200)")
+    fg.add_argument("--branch", default="HEAD")
+    fg.add_argument("--reveal-tests", action="store_true",
+                    help="put the commit's tests in the workspace as the visible check, instead of holding them out")
+    fg.add_argument("--setup", help="shell command to prepare a checkout, e.g. 'pip install -e .'")
+    fg.add_argument("--timeout", type=int, default=600, help="seconds per test run while validating")
+    fg.set_defaults(fn=cmd_tasks_from_git)
 
     sub.add_parser("presets", help="list strategy presets").set_defaults(fn=cmd_presets)
 

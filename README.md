@@ -13,6 +13,8 @@ model *thinks* it's done. Open Agent runs the loop a careful engineer would:
 6. **Know when to stop**: two rounds that change nothing end as `stalled`; a provider or network failure ends at once; `--max-cost` caps spend.
 7. **Best-of-N**: run attempts in parallel in isolated copies and keep the passing one with the fewest rounds.
 8. **Measure**: benchmark strategies against raw OpenCode, graded by held-out tests the agent never sees, and write every run as an AgentDiff trace for paired inference, pass^k, diagnosis and a scorecard.
+9. **Improve itself**: `openagent evolve` lets signals in the runs propose changes to the harness and keeps one only when it wins more tasks than it loses, loses none, and holds on a re-run.
+10. **Real tasks**: `openagent tasks from-git` turns your repository's history into tasks graded by each commit's own tests.
 
 The core is Python 3.11+ with no dependencies, it is MIT licensed, and it works with any model OpenCode supports.
 
@@ -51,7 +53,8 @@ The exit code is 0 only if the check passes. Progress goes to stderr, and the ag
 ```bash
 git clone https://github.com/sugeerth/Opencodeharness && cd Opencodeharness
 pip install -e . git+https://github.com/sugeerth/Agenttracing
-openagent demo --repeat 3 --agentdiff
+openagent demo --repeat 3 --agentdiff          # bench: baseline, guided, openagent
+openagent demo --evolve 6 --repeat 2            # evolve the harness on the same tasks
 ```
 
 This runs the **real OpenCode**, with its tools, sessions and event stream, against a scripted model
@@ -68,6 +71,37 @@ served on localhost (`openagent.sim`), so it needs no API key. Six example tasks
 
 The playbooks decide those outcomes, so the demo shows the workflow, not how good any model is. The
 committed run is in [`docs/demo`](docs/demo/), walked through in [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+## Let it improve itself: `openagent evolve`
+
+```bash
+openagent evolve tasks/ -m anthropic/claude-sonnet-5-5 --repeat 3 -j 4 --agentdiff -o evolution/
+openagent run "..." -c "pytest -q" --harness evolution/harness.json
+```
+
+Each generation:
+1. Read the current harness's runs for signals: passed the visible check but failed the held-out grade, stalled, edited protected files, ran out of rounds.
+2. Let the strongest signal name one change from a small library: an instruction, or more repair rounds.
+3. Run the candidate on every task. Keep it only if it wins more tasks than it loses and loses none (AgentDiff's rule).
+4. Run the tasks it moved again, under both harnesses, and revert the change if the win doesn't hold.
+
+No model proposes changes. `EVOLUTION.md` records every decision with the signal and tasks behind it, and
+`harness.json` is the result: plain-language instructions you can read and edit. On the demo
+([docs/evolve](docs/evolve/EVOLUTION.md)) it went from 4/6 to 6/6 in two kept changes.
+
+## Real tasks from your history: `openagent tasks from-git`
+
+```bash
+openagent tasks from-git ~/your-repo -o tasks/ -n 20 --test-cmd "python -m pytest -q {tests}" --setup "pip install -e ."
+```
+
+A commit that changed code and its tests becomes a task:
+- **Start:** the agent starts from the commit's parent, with the commit's message as the prompt.
+- **Grading:** the commit's tests are held out and grade the run.
+- **Validation:** a commit is used only if its tests fail on the parent and pass on the commit; `from-git.json` says why every other commit was skipped.
+- **`--reveal-tests`:** use the commit's tests as the visible, protected check instead.
+
+On python-slugify this found six tasks.
 
 ## Benchmark with a real model
 

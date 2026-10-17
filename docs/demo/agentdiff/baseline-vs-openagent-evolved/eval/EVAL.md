@@ -1,0 +1,35 @@
+# Evaluation scorecard
+
+Mode: online — traces as recorded
+
+| dimension | baseline | openagent-evolved |
+|---|---|---|
+| task success | 3/18 = 17% [0.06–0.39] | 18/18 = 100% [0.82–1.00] |
+| correct tool called | — (not measurable) | — (not measurable) |
+| useful tool results (over calls) | 0/54 = 0% [0.00–0.07] | 3/135 = 2% [0.01–0.06] |
+| expected evidence retrieved (golden) | — (not measurable) | — (not measurable) |
+| answer grounded | — (not measurable) | 3/3 = 100% [0.44–1.00] |
+| policy compliant | — (not measurable) | — (not measurable) |
+| no risk flag | 15/18 = 83% [0.61–0.94] | 12/18 = 67% [0.44–0.84] |
+| stopped when done | — (not measurable) | 0/3 = 0% [0.00–0.56] |
+| no loop | 18/18 = 100% [0.82–1.00] | 13/18 = 72% [0.49–0.88] |
+| no tool error | 18/18 = 100% [0.82–1.00] | 18/18 = 100% [0.82–1.00] |
+| every milestone reached (golden) | — (not measurable) | — (not measurable) |
+| milestones reached in order (golden) | — (not measurable) | — (not measurable) |
+| errors recovered (over errors) | — (not measurable) | — (not measurable) |
+| milestones reached (over milestones) | — (not measurable) | — (not measurable) |
+| latency (s) per run | mean 4.8249 (median 4.7915, 4.33–5.304) | mean 8.4748 (median 8.02, 4.458–15.039) |
+| wasted seconds per run | mean 0.2446 (median 0.132, 0.005–0.923) | mean 0.6887 (median 0.747, 0.004–1.446) |
+| share of time waiting on tools per run | mean 0.9808 (median 1, 0.8333–1) | mean 0.9997 (median 1, 0.9957–1) |
+| cost (USD) per run | mean 0 (median 0, 0–0) | mean 0 (median 0, 0–0) |
+| tokens per run | mean 7614.17 (median 7583.5, 4847–10395) | mean 22576 (median 22852.5, 5327–32122) |
+| steps per run | mean 5 (median 5, 4–6) | mean 10.8333 (median 10.5, 4–17) |
+| tool calls per run | mean 3 (median 3, 2–4) | mean 7.5 (median 7.5, 2–11) |
+| accuracy score (outcome.score) per run | mean 0.1667 (median 0, 0–1) | mean 1 (median 1, 1–1) |
+| risk vs reward | reward 17% · risk 17% · ratio 1 | reward 100% · risk 33% · ratio 3 |
+| retrieval and time | 0/54 calls fed the answer, 0 returned nothing, 54 dead ends; 99% of time wasted | 3/135 calls fed the answer, 23 returned nothing, 109 dead ends; 91% of time wasted |
+| milestones | — (no task names milestones) | — (no task names milestones) |
+| risk flags | 3 flag(s) in 3 run(s): blind_write ×3 | 6 flag(s) in 6 run(s): looping ×3, blind_write ×3 |
+| LLM judge | no judge | no judge |
+
+every rate is successes/runs with a 95% Wilson interval (useful tool results over calls, expected evidence over the golden list, recovered errors over errors); 'correct tool', 'expected evidence' and 'policy compliant' need a golden set or a policy and read None without one; write/read effects are declared by the tool or inferred from its name (the basis is stated per run); the judge's verdicts are reported beside the grade, never merged into it

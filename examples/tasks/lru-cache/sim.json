@@ -1,3 +1,66 @@
-{"first": [{"read": "lru.py"}, {"write": "lru.py", "from": "sim/list_lru.py"}, {"say": "Implemented LRUCache."}],
- "verify": [{"bash": "python3 -m unittest discover -s tests -q"}, {"say": "Implemented LRUCache; the tests pass."}],
- "repair": [[{"read": "lru.py"}, {"say": "The implementation looks correct to me."}]]}
+{
+ "first": [
+  {
+   "read": "lru.py"
+  },
+  {
+   "write": "lru.py",
+   "from": "sim/list_lru.py"
+  },
+  {
+   "say": "Implemented LRUCache."
+  }
+ ],
+ "verify": [
+  {
+   "bash": "python3 -m unittest discover -s tests -q"
+  },
+  {
+   "say": "Implemented LRUCache; the tests pass."
+  }
+ ],
+ "repair": [
+  [
+   {
+    "read": "lru.py"
+   },
+   {
+    "say": "The implementation looks correct to me."
+   }
+  ]
+ ],
+ "when": {
+  "list every requirement and edge case": {
+   "first": [
+    {
+     "read": "lru.py"
+    },
+    {
+     "write": "lru.py",
+     "from": "sim/list_lru.py"
+    },
+    {
+     "say": "Implemented LRUCache."
+    }
+   ],
+   "verify": [
+    {
+     "bash": "python3 -m unittest discover -s tests -q"
+    },
+    {
+     "read": "lru.py"
+    },
+    {
+     "write": "lru.py",
+     "from": "sim/odict_lru.py"
+    },
+    {
+     "bash": "python3 -m unittest discover -s tests -q"
+    },
+    {
+     "say": "Listing the requirements: get and put must be O(1), and list.remove is O(n), so I switched to an OrderedDict. Tests pass."
+    }
+   ]
+  }
+ }
+}

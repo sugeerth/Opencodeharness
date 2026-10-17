@@ -1,0 +1,38 @@
+Agents: A=v0  B=v1
+Paired inference over 6 task(s): v0 minus v1 = -0.1667 ± 0.1667 (95% [-0.4933, 0.16]); sign test p=1.0 — not distinguishable: only 6 paired task(s) (needs at least 10)
+Runs: {'v0': 2, 'v1': 2}
+  fix-average: A stable-pass B stable-pass | divergence none
+  fix-config: A stable-fail B stable-fail | divergence none
+  hello: A stable-pass B stable-pass | divergence none
+  lru-cache: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)
+  parse-duration: A stable-pass B stable-pass | divergence none
+  slugify: A stable-pass B stable-pass | divergence none
+v0 fails all runs on 2 task(s) (reproducible); v1 fails all runs on 1 task(s) (reproducible). Divergences are systematic on 1 of 6 task(s), so the observed gaps are behavioral, not noise.
+Diagnosis across runs:
+  fix-config / v0 (fails 2 of 2): [all_contested] every diagnosed run was contested — the evidence never picks a cause for v0 on this task
+    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)
+  fix-config / v1 (fails 2 of 2): [all_contested] every diagnosed run was contested — the evidence never picks a cause for v1 on this task
+    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)
+  lru-cache / v0 (fails 2 of 2): [confirmed] v0 run r1 failed with an answer 0.90 similar (token Jaccard) to v1 run r1's *passing* answer — the grader treated near-identical answers differently
+    spectrum: spectrum needs both classes; this agent has 2 failing and 0 passing run(s)
+  1 diagnosis(es) confirmed by executed checks against the corpus itself — no re-run needed
+
+Reliability (repeated runs):
+  v0: 8/12 run(s) succeeded across 6 task(s); max_k=2
+    pass^k  k=1:0.667 [0.39, 0.86]  k=2:0.667 [0.15, 0.74]
+    pass@k  k=1:0.667  k=2:0.667
+    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks
+    outcome   consistency: 1.000 over 6/6 task(s)
+    trajectory consistency: 1.000 over 4/6 task(s)
+    resources  consistency: 0.986 over 6/6 task(s)
+    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)
+    runs advisory [insufficient]: 2 run(s) per task at the thinnest task (median 2, max 2). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.
+  v1: 10/12 run(s) succeeded across 6 task(s); max_k=2
+    pass^k  k=1:0.833 [0.55, 0.95]  k=2:0.833 [0.30, 0.91]
+    pass@k  k=1:0.833  k=2:0.833
+    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks
+    outcome   consistency: 1.000 over 6/6 task(s)
+    trajectory consistency: 1.000 over 5/6 task(s)
+    resources  consistency: 0.989 over 6/6 task(s)
+    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)
+    runs advisory [insufficient]: 2 run(s) per task at the thinnest task (median 2, max 2). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.

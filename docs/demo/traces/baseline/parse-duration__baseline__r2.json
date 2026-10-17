@@ -7,10 +7,12 @@
   "version": "openagent-0.3.0",
   "system_prompt": "",
   "config": {
+   "name": "baseline",
    "preamble": false,
    "reveal_check": false,
    "rounds": 0,
    "attempts": 1,
+   "instructions": [],
    "check": "python3 -m unittest discover -s tests -q"
   }
  },
@@ -29,13 +31,14 @@
   "input_tokens": 7436,
   "output_tokens": 124,
   "cost_usd": 0.0,
-  "latency_s": 5.648
+  "latency_s": 4.751
  },
  "harness": {
   "adapter": "openagent 0.3.0",
   "graded_by": "check",
   "stop": "failed",
   "repairs": 0,
+  "opencode_retries": 0,
   "changes": {
    "added": [],
    "modified": [
@@ -131,12 +134,12 @@
   {
    "type": "tool_call",
    "name": "read",
-   "input": "{\"filePath\": \"/tmp/openagent-parse-duration-u4i5ahlq/ws/duration.py\"}",
-   "output": "<path>/tmp/openagent-parse-duration-u4i5ahlq/ws/duration.py</path>\n<type>file</type>\n<content>\n1: def parse_duration(text: str) -> int:\n2:     raise NotImplementedError\n\n(End of file - total 2 lines)\n</content>",
+   "input": "{\"filePath\": \"/tmp/openagent-parse-duration-cq_1embq/ws/duration.py\"}",
+   "output": "<path>/tmp/openagent-parse-duration-cq_1embq/ws/duration.py</path>\n<type>file</type>\n<content>\n1: def parse_duration(text: str) -> int:\n2:     raise NotImplementedError\n\n(End of file - total 2 lines)\n</content>",
    "error": false,
    "effect": "read",
    "tokens": 2465,
-   "latency_s": 0.001,
+   "latency_s": 0.101,
    "started_s": 0.0,
    "input_tokens": 2442,
    "output_tokens": 23,
@@ -146,13 +149,13 @@
   {
    "type": "tool_call",
    "name": "write",
-   "input": "{\"content\": \"import re\\n\\n\\ndef parse_duration(text: str) -> int:\\n    total = 0\\n    for amount, unit in re.findall(r\\\"(\\\\d+)([hms])\\\", text):\\n        total += int(amount) * {\\\"h\\\": 3600, \\\"m\\\": 60, \\\"s\\\": 1}[unit]\\n    return total\\n\", \"filePath\": \"/tmp/openagent-parse-duration-u4i5ahlq/ws/duration.py\"}",
+   "input": "{\"content\": \"import re\\n\\n\\ndef parse_duration(text: str) -> int:\\n    total = 0\\n    for amount, unit in re.findall(r\\\"(\\\\d+)([hms])\\\", text):\\n        total += int(amount) * {\\\"h\\\": 3600, \\\"m\\\": 60, \\\"s\\\": 1}[unit]\\n    return total\\n\", \"filePath\": \"/tmp/openagent-parse-duration-cq_1embq/ws/duration.py\"}",
    "output": "Wrote file successfully.",
    "error": false,
    "effect": "write",
    "tokens": 2577,
-   "latency_s": 0.0,
-   "started_s": 0.846,
+   "latency_s": 0.042,
+   "started_s": 0.19,
    "input_tokens": 2494,
    "output_tokens": 83,
    "cached_tokens": 0,
@@ -165,7 +168,7 @@
    "output": "Implemented parse_duration with a regex over number-unit pairs.",
    "tokens": 2518,
    "latency_s": 0.0,
-   "started_s": 0.972,
+   "started_s": 0.308,
    "input_tokens": 2500,
    "output_tokens": 18,
    "cached_tokens": 0,
@@ -175,9 +178,9 @@
    "type": "tool_call",
    "name": "openagent.check",
    "input": "python3 -m unittest discover -s tests -q",
-   "output": "exit 1\n======================================================================\nFAIL: test_invalid (test_duration.DurationTest.test_invalid)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/tmp/openagent-parse-duration-u4i5ahlq/ws/tests/test_duration.py\", line 14, in test_invalid\n    with self.assertRaises(ValueError, msg=bad):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised : \n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nFAILED (failures=1)",
+   "output": "exit 1\n======================================================================\nFAIL: test_invalid (test_duration.DurationTest.test_invalid)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/tmp/openagent-parse-duration-cq_1embq/ws/tests/test_duration.py\", line 14, in test_invalid\n    with self.assertRaises(ValueError, msg=bad):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ValueError not raised : \n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nFAILED (failures=1)",
    "tokens": 0,
-   "latency_s": 0.12,
+   "latency_s": 0.066,
    "error": false,
    "effect": "read",
    "note": "check failed",

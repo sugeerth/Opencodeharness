@@ -9,7 +9,9 @@ run committed in [`docs/demo`](demo/), which you can reproduce with one command:
 git clone https://github.com/sugeerth/Opencodeharness && cd Opencodeharness
 pip install -e . git+https://github.com/sugeerth/Agenttracing
 npm i -g opencode-ai
-openagent demo --repeat 3 --agentdiff -o docs/demo
+openagent demo --preset baseline --preset guided --preset openagent \
+  --harness docs/evolve/harness.json --repeat 3 --agentdiff -o docs/demo
+openagent demo --evolve 6 --repeat 2 --agentdiff -o docs/evolve
 ```
 
 > **About this run.** OpenCode ran for real here, with its own tools, sessions and event stream. The
@@ -115,7 +117,10 @@ real while building this demo, when a relative config path made every run fail.
 | baseline | 17% | 3/18 | — | 6/18 | 3 | 0.00 | failed 12, passed 6 |
 | guided | 33% | 6/18 | +17 pts | 9/18 | 6 | 0.00 | failed 9, passed 9 |
 | openagent | 67% | 12/18 | +50 pts | 15/18 | 6 | 0.83 | passed 15, stalled 3 |
+| openagent-evolved | 100% | 18/18 | +83 pts | 18/18 | 9 | 0.67 | passed 18 |
 
+- `openagent-evolved` is the harness `openagent evolve` produced (step 7), run here with
+  `--harness docs/evolve/harness.json`.
 - *Pass rate* is graded by the held-out grader where a task has one. On `lru-cache` every strategy
   passes the visible tests (*Visible check*) and fails the hidden performance test: the implementation
   is O(n). No amount of repair against a check can fix what the check doesn't test, and the report
@@ -189,12 +194,70 @@ as a wrong reading on this demo and is now declared in the trace:
 | tools were "undeclared" | `bash` wasn't in the trace's tool table | the table lists OpenCode's tools |
 | a run that never reached the model counted against the agent | no termination reason | `termination: infrastructure_error`, which AgentDiff leaves out of reliability statistics |
 
-## 7. Your turn: real numbers
+## 7. Let the harness improve itself: `openagent evolve`
+
+`openagent evolve` closes the loop. Each generation it reads the current harness's runs for signals,
+lets the strongest signal name one change from a small library, runs the candidate on every task,
+and keeps it only by AgentDiff's rule: more wins than losses, and no losses. Then it runs the tasks
+the change moved again, under both harnesses, with fresh runs; a win that doesn't hold is reverted.
+No model proposes changes, and every decision is in the ledger with the signal and tasks behind it.
+
+| Signal in the runs | Change it proposes |
+|---|---|
+| passed the visible check, failed the held-out grade | an instruction to meet every stated requirement and edge case, performance included; then one to write and run its own tests |
+| stalled | an instruction to re-read the failing assertion and change the code, never blame the test |
+| edited protected files | an instruction that the tests are the specification |
+| check still failing | an instruction to read and run the tests before finishing |
+| used every repair round | two more repair rounds |
+
+On the demo ([EVOLUTION.md](evolve/EVOLUTION.md), `openagent demo --evolve 6 --repeat 2 --agentdiff`):
+
+| Version | Tasks passing | Change | Why |
+|---|---|---|---|
+| v0 | 4/6 | the `openagent` preset | |
+| v1 | 5/6 | + meet every requirement and edge case | proposed by `held_out_fail` on `lru-cache`; won it, lost none, held on the re-run |
+| v2 | 6/6 | + re-read the failing assertion | proposed by `stalled` on `fix-config`; won it, lost none, held on the re-run |
+
+The result is [`harness.json`](evolve/harness.json), two plain-language instructions you can read,
+edit and use anywhere: `openagent run --harness harness.json`, `openagent bench --harness harness.json`.
+As always with the demo, the playbooks react to those instructions by construction; what this shows
+is the mechanism. While building it, the mechanism also showed why the re-run matters: one early
+evolution reverted a change because one OpenCode run printed nothing at all, which made a task look
+lost. We could not reproduce it in 48 more parallel runs, so the cause is unknown; Open Agent now
+treats a run that prints nothing as the platform failing, retries it once, and records the retry.
+
+## 8. Real tasks from your own history: `openagent tasks from-git`
+
+A commit that changed code and its tests is a task with a grader nobody had to write:
+
+```bash
+openagent tasks from-git https://github.com/un33k/python-slugify -o tasks/ -n 8 \
+  --test-cmd "python -m pytest -q -x {tests}"
+```
+
+The agent starts from the commit's parent with the commit's message as the prompt. The commit's
+tests are held out in `grade/` and copied over the agent's work at the end. A commit becomes a task
+only if those tests fail on the parent and pass on the commit; every other commit is listed in
+`from-git.json` with the reason. On python-slugify this produced six tasks; the commits it skipped
+were a release whose tests already passed on its parent and a reorganisation whose test command
+collected nothing. With the `text-unidecode` dependency missing it skipped most commits for that
+reason, which is what `--setup "pip install -e ."` is for.
+
+One thing to know about held-out tasks: the visible check is the project's existing suite, which
+usually passes from the start, so the repair loop only fires on regressions and the held-out tests
+alone decide. That is the honest setting for measuring an agent, and it is where `evolve`'s
+`held_out_fail` signal and its write-your-own-tests change earn their keep. `--reveal-tests` puts the
+commit's tests in the workspace as the check instead (protected), which measures how well the
+repair loop drives a failing test to green.
+
+## 9. Your turn: real numbers
 
 ```bash
 opencode auth login                              # your provider
-openagent bench examples/tasks --preset baseline --preset openagent --preset best-of-3 \
-  -m anthropic/claude-sonnet-5-5 --repeat 5 -j 4 --agentdiff -o results/
+openagent tasks from-git ~/your-repo -o tasks/ -n 20 --test-cmd "python -m pytest -q {tests}" --setup "pip install -e ."
+openagent bench tasks/ --preset baseline --preset openagent -m anthropic/claude-sonnet-5-5 --repeat 5 -j 4 --agentdiff -o results/
+openagent evolve tasks/ -m anthropic/claude-sonnet-5-5 --repeat 3 -j 4 --agentdiff -o evolution/
+openagent bench tasks/ --harness evolution/harness.json -m anthropic/claude-sonnet-5-5 --repeat 5 --agentdiff -o after/
 ```
 
 Bring your own tasks the same way (step 1). Use at least 10 tasks and 5 repeats if you want

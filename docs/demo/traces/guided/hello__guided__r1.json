@@ -7,10 +7,12 @@
   "version": "openagent-0.3.0",
   "system_prompt": "You are working autonomously in this repository. No human will answer questions, so make reasonable assumptions and keep going.\n- Start by reading the code relevant to the task; do not guess at structure.\n- Make the smallest change that fully solves the task, matching the existing style.\n- Before you finish, run the relevant tests or checks yourself and fix any failures.\n- Never weaken, skip or delete tests or checks to make them pass.",
   "config": {
+   "name": "guided",
    "preamble": true,
    "reveal_check": true,
    "rounds": 0,
    "attempts": 1,
+   "instructions": [],
    "check": "grep -qx hi hello.txt"
   }
  },
@@ -29,13 +31,14 @@
   "input_tokens": 5084,
   "output_tokens": 37,
   "cost_usd": 0.0,
-  "latency_s": 6.045
+  "latency_s": 4.66
  },
  "harness": {
   "adapter": "openagent 0.3.0",
   "graded_by": "check",
   "stop": "passed",
   "repairs": 0,
+  "opencode_retries": 0,
   "changes": {
    "added": [
     "hello.txt"
@@ -131,12 +134,12 @@
   {
    "type": "tool_call",
    "name": "write",
-   "input": "{\"content\": \"hi\\n\", \"filePath\": \"/tmp/openagent-hello-cr5cdb6c/ws/hello.txt\"}",
+   "input": "{\"content\": \"hi\\n\", \"filePath\": \"/tmp/openagent-hello-qzwxj_ze/ws/hello.txt\"}",
    "output": "Wrote file successfully.",
    "error": false,
    "effect": "write",
    "tokens": 2565,
-   "latency_s": 0.054,
+   "latency_s": 0.091,
    "started_s": 0.0,
    "input_tokens": 2539,
    "output_tokens": 26,
@@ -150,7 +153,7 @@
    "output": "Created hello.txt containing hi.",
    "tokens": 2556,
    "latency_s": 0.0,
-   "started_s": 0.165,
+   "started_s": 0.768,
    "input_tokens": 2545,
    "output_tokens": 11,
    "cached_tokens": 0,
@@ -162,7 +165,7 @@
    "input": "grep -qx hi hello.txt",
    "output": "exit 0\n",
    "tokens": 0,
-   "latency_s": 0.011,
+   "latency_s": 0.007,
    "error": false,
    "effect": "read",
    "note": "check passed",

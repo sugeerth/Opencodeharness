@@ -18,16 +18,16 @@ Mode: online — traces as recorded
 | milestones reached in order (golden) | — (not measurable) | — (not measurable) |
 | errors recovered (over errors) | — (not measurable) | — (not measurable) |
 | milestones reached (over milestones) | — (not measurable) | — (not measurable) |
-| latency (s) per run | mean 6.0847 (median 6.079, 4.627–6.915) | mean 6.7127 (median 6.769, 5.806–7.677) |
-| wasted seconds per run | mean 0.3226 (median 0.272, 0.005–1.26) | mean 0.8178 (median 0.79, 0.009–1.853) |
-| share of time waiting on tools per run | mean 0.9976 (median 1, 0.9875–1) | mean 0.9944 (median 1, 0.9–1) |
+| latency (s) per run | mean 4.8249 (median 4.7915, 4.33–5.304) | mean 5.4862 (median 5.5115, 4.66–6.143) |
+| wasted seconds per run | mean 0.2446 (median 0.132, 0.005–0.923) | mean 0.58 (median 0.575, 0.017–1.602) |
+| share of time waiting on tools per run | mean 0.9808 (median 1, 0.8333–1) | mean 0.9967 (median 1, 0.9444–1) |
 | cost (USD) per run | mean 0 (median 0, 0–0) | mean 0 (median 0, 0–0) |
 | tokens per run | mean 7614.17 (median 7583.5, 4847–10395) | mean 12969.2 (median 10919, 5121–20479) |
 | steps per run | mean 5 (median 5, 4–6) | mean 6.6667 (median 6, 4–9) |
 | tool calls per run | mean 3 (median 3, 2–4) | mean 4.6667 (median 4, 2–7) |
 | accuracy score (outcome.score) per run | mean 0.1667 (median 0, 0–1) | mean 0.3333 (median 0, 0–1) |
 | risk vs reward | reward 17% · risk 17% · ratio 1 | reward 33% · risk 17% · ratio 2 |
-| retrieval and time | 0/54 calls fed the answer, 0 returned nothing, 54 dead ends; 100% of time wasted | 0/84 calls fed the answer, 6 returned nothing, 78 dead ends; 100% of time wasted |
+| retrieval and time | 0/54 calls fed the answer, 0 returned nothing, 54 dead ends; 99% of time wasted | 0/84 calls fed the answer, 6 returned nothing, 78 dead ends; 100% of time wasted |
 | milestones | — (no task names milestones) | — (no task names milestones) |
 | risk flags | 3 flag(s) in 3 run(s): blind_write ×3 | 3 flag(s) in 3 run(s): blind_write ×3 |
 | LLM judge | no judge | no judge |

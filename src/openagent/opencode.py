@@ -23,11 +23,18 @@ class RunResult:
         return self.exit_code == 0 and not self.timed_out
 
     @property
+    def empty(self) -> bool:
+        """OpenCode printed no events at all: not even the start of a step. Whatever the agent would
+        have done, it never got to; that is the platform failing, and worth one retry."""
+        return not self.events and not self.timed_out
+
+    @property
     def infra_failure(self) -> bool:
         """OpenCode failed before the model did any work (missing binary, auth, network, bad model).
         Repair prompts can't fix that, so the loop should stop instead of retrying."""
         s = self.stats
-        return not self.ok and not self.timed_out and s.steps == 0 and s.tool_calls == 0 and bool(s.errors)
+        return ((not self.ok or self.empty) and not self.timed_out and s.steps == 0 and s.tool_calls == 0
+                and bool(s.errors))
 
 
 @dataclass
@@ -41,6 +48,12 @@ class OpenCode:
     extra_args: list[str] = field(default_factory=list)
     timeout: int = 900
     env: dict[str, str] | None = None
+
+    def __post_init__(self):
+        # OpenCode runs inside each workspace, so a relative path like ./bin/opencode must be resolved
+        # against the directory openagent was started from, now.
+        if os.sep in self.binary and not os.path.isabs(self.binary):
+            self.binary = os.path.abspath(self.binary)
 
     def command(self, prompt: str, session: str | None = None) -> list[str]:
         cmd = [self.binary, "run", "--format", "json"]

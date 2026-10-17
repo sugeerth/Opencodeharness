@@ -29,6 +29,8 @@ jobs:
       - run: pip install -e '.[dev]' git+https://github.com/sugeerth/Agenttracing
       - run: pytest -q
       - run: openagent demo --agentdiff -j 3 -o demo-results
+      - run: openagent demo --evolve 3 -j 3 -o demo-results/evolve
+      - run: grep -q '"stopped": "every task passes every run"' demo-results/evolve/evolution.json
       - uses: actions/upload-artifact@v4
         with:
           name: demo-results

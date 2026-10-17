@@ -18,16 +18,16 @@ Mode: online — traces as recorded
 | milestones reached in order (golden) | — (not measurable) | — (not measurable) |
 | errors recovered (over errors) | — (not measurable) | — (not measurable) |
 | milestones reached (over milestones) | — (not measurable) | — (not measurable) |
-| latency (s) per run | mean 6.0847 (median 6.079, 4.627–6.915) | mean 11.8299 (median 10.3365, 5.848–19.484) |
-| wasted seconds per run | mean 0.3226 (median 0.272, 0.005–1.26) | mean 1.0827 (median 1.0985, 0.005–2.004) |
-| share of time waiting on tools per run | mean 0.9976 (median 1, 0.9875–1) | mean 0.9978 (median 1, 0.9672–1) |
+| latency (s) per run | mean 4.8249 (median 4.7915, 4.33–5.304) | mean 9.2786 (median 8.1505, 4.689–15.112) |
+| wasted seconds per run | mean 0.2446 (median 0.132, 0.005–0.923) | mean 0.6215 (median 0.5985, 0.049–1.327) |
+| share of time waiting on tools per run | mean 0.9808 (median 1, 0.8333–1) | mean 0.9944 (median 0.9989, 0.9609–1) |
 | cost (USD) per run | mean 0 (median 0, 0–0) | mean 0 (median 0, 0–0) |
 | tokens per run | mean 7614.17 (median 7583.5, 4847–10395) | mean 20364.7 (median 22023, 5121–31096) |
 | steps per run | mean 5 (median 5, 4–6) | mean 10.6667 (median 11.5, 4–17) |
 | tool calls per run | mean 3 (median 3, 2–4) | mean 7 (median 7.5, 2–11) |
 | accuracy score (outcome.score) per run | mean 0.1667 (median 0, 0–1) | mean 0.6667 (median 1, 0–1) |
 | risk vs reward | reward 17% · risk 17% · ratio 1 | reward 67% · risk 33% · ratio 2 |
-| retrieval and time | 0/54 calls fed the answer, 0 returned nothing, 54 dead ends; 100% of time wasted | 0/126 calls fed the answer, 20 returned nothing, 106 dead ends; 100% of time wasted |
+| retrieval and time | 0/54 calls fed the answer, 0 returned nothing, 54 dead ends; 99% of time wasted | 0/126 calls fed the answer, 21 returned nothing, 105 dead ends; 99% of time wasted |
 | milestones | — (no task names milestones) | — (no task names milestones) |
 | risk flags | 3 flag(s) in 3 run(s): blind_write ×3 | 6 flag(s) in 6 run(s): looping ×3, blind_write ×3 |
 | LLM judge | no judge | no judge |

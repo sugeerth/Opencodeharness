@@ -1,0 +1,11 @@
+{
+  "name": "openagent-evolved",
+  "preamble": true,
+  "reveal_check": true,
+  "rounds": 3,
+  "attempts": 1,
+  "instructions": [
+    "Before you finish, list every requirement and edge case the task states, including limits on performance such as time complexity, and make sure the code meets each one, not only the ones the tests check.",
+    "When the check still fails, re-read the failing assertion and the test that makes it before you answer, find the input it uses, and change the code; never conclude the test or the environment is wrong."
+  ]
+}

@@ -168,6 +168,7 @@ def to_trajectory(outcome: Outcome, task_id: str, prompt: str, check: str | None
         st["index"] = i
     harness = {"adapter": f"openagent {__version__}", "graded_by": "grade" if graded is not None else "check",
                "stop": a.stop if a else "error", "repairs": outcome.repairs,
+               "opencode_retries": sum(r.retried for r in a.rounds) if a else 0,
                "changes": a.changes if a else {}}
     if grade_output:
         harness["grade_output"] = _clip(grade_output, 2000)
@@ -177,9 +178,8 @@ def to_trajectory(outcome: Outcome, task_id: str, prompt: str, check: str | None
         "schema_version": 1,
         "trace_id": f"{safe_name(task_id)}__{safe_name(s.name)}__r{run}",
         "agent": {"name": s.name, "model": model or "opencode-default", "version": f"openagent-{__version__}",
-                  "system_prompt": PREAMBLE if s.preamble else "",
-                  "config": {"preamble": s.preamble, "reveal_check": s.reveal_check, "rounds": s.rounds,
-                             "attempts": s.attempts, "check": check}},
+                  "system_prompt": (PREAMBLE if s.preamble else "") + "".join(f"\n- {i}" for i in s.instructions),
+                  "config": {**s.to_dict(), "check": check}},
         "task": {"id": task_id, "prompt": prompt, "expected": None},
         "outcome": {"success": success, "answer": answer, "score": 1.0 if success else 0.0,
                     "termination": "timeout" if a and any(r.stats.errors and "timed out" in r.stats.errors[-1]

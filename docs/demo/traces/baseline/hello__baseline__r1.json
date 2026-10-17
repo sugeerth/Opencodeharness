@@ -7,10 +7,12 @@
   "version": "openagent-0.3.0",
   "system_prompt": "",
   "config": {
+   "name": "baseline",
    "preamble": false,
    "reveal_check": false,
    "rounds": 0,
    "attempts": 1,
+   "instructions": [],
    "check": "grep -qx hi hello.txt"
   }
  },
@@ -29,13 +31,14 @@
   "input_tokens": 4810,
   "output_tokens": 37,
   "cost_usd": 0.0,
-  "latency_s": 4.627
+  "latency_s": 4.33
  },
  "harness": {
   "adapter": "openagent 0.3.0",
   "graded_by": "check",
   "stop": "passed",
   "repairs": 0,
+  "opencode_retries": 0,
   "changes": {
    "added": [
     "hello.txt"
@@ -131,12 +134,12 @@
   {
    "type": "tool_call",
    "name": "write",
-   "input": "{\"content\": \"hi\\n\", \"filePath\": \"/tmp/openagent-hello-unw0_lud/ws/hello.txt\"}",
+   "input": "{\"content\": \"hi\\n\", \"filePath\": \"/tmp/openagent-hello-i5ohbf0w/ws/hello.txt\"}",
    "output": "Wrote file successfully.",
    "error": false,
    "effect": "write",
    "tokens": 2428,
-   "latency_s": 0.0,
+   "latency_s": 0.001,
    "started_s": 0.0,
    "input_tokens": 2402,
    "output_tokens": 26,
@@ -149,8 +152,8 @@
    "input": "",
    "output": "Created hello.txt containing hi.",
    "tokens": 2419,
-   "latency_s": 0.0,
-   "started_s": 0.084,
+   "latency_s": 0.001,
+   "started_s": 0.415,
    "input_tokens": 2408,
    "output_tokens": 11,
    "cached_tokens": 0,
@@ -162,7 +165,7 @@
    "input": "grep -qx hi hello.txt",
    "output": "exit 0\n",
    "tokens": 0,
-   "latency_s": 0.005,
+   "latency_s": 0.004,
    "error": false,
    "effect": "read",
    "note": "check passed",

@@ -1,0 +1,35 @@
+# Evaluation scorecard
+
+Mode: online — traces as recorded
+
+| dimension | v1 | v2 |
+|---|---|---|
+| task success | 10/12 = 83% [0.55–0.95] | 12/12 = 100% [0.76–1.00] |
+| correct tool called | — (not measurable) | — (not measurable) |
+| useful tool results (over calls) | 0/90 = 0% [0.00–0.04] | 2/90 = 2% [0.01–0.08] |
+| expected evidence retrieved (golden) | — (not measurable) | — (not measurable) |
+| answer grounded | — (not measurable) | 2/2 = 100% [0.34–1.00] |
+| policy compliant | — (not measurable) | — (not measurable) |
+| no risk flag | 8/12 = 67% [0.39–0.86] | 8/12 = 67% [0.39–0.86] |
+| stopped when done | — (not measurable) | 0/2 = 0% [0.00–0.66] |
+| no loop | 6/12 = 50% [0.25–0.75] | 8/12 = 67% [0.39–0.86] |
+| no tool error | 12/12 = 100% [0.76–1.00] | 12/12 = 100% [0.76–1.00] |
+| every milestone reached (golden) | — (not measurable) | — (not measurable) |
+| milestones reached in order (golden) | — (not measurable) | — (not measurable) |
+| errors recovered (over errors) | — (not measurable) | — (not measurable) |
+| milestones reached (over milestones) | — (not measurable) | — (not measurable) |
+| latency (s) per run | mean 9.4558 (median 8.582, 4.707–15.576) | mean 8.5216 (median 7.995, 4.341–15.011) |
+| wasted seconds per run | mean 0.7029 (median 0.7765, 0.004–1.137) | mean 0.6867 (median 0.6285, 0.003–1.422) |
+| share of time waiting on tools per run | mean 0.9998 (median 1, 0.9989–1) | mean 0.996 (median 1, 0.9773–1) |
+| cost (USD) per run | mean 0 (median 0, 0–0) | mean 0 (median 0, 0–0) |
+| tokens per run | mean 22243.5 (median 22594.5, 5225–31612) | mean 22576 (median 22852.5, 5327–32122) |
+| steps per run | mean 11.1667 (median 11.5, 4–17) | mean 10.8333 (median 10.5, 4–17) |
+| tool calls per run | mean 7.5 (median 7.5, 2–11) | mean 7.5 (median 7.5, 2–11) |
+| accuracy score (outcome.score) per run | mean 0.8333 (median 1, 0–1) | mean 1 (median 1, 1–1) |
+| risk vs reward | reward 83% · risk 33% · ratio 2.5 | reward 100% · risk 33% · ratio 3 |
+| retrieval and time | 0/90 calls fed the answer, 18 returned nothing, 72 dead ends; 100% of time wasted | 2/90 calls fed the answer, 16 returned nothing, 72 dead ends; 93% of time wasted |
+| milestones | — (no task names milestones) | — (no task names milestones) |
+| risk flags | 4 flag(s) in 4 run(s): looping ×2, blind_write ×2 | 4 flag(s) in 4 run(s): looping ×2, blind_write ×2 |
+| LLM judge | no judge | no judge |
+
+every rate is successes/runs with a 95% Wilson interval (useful tool results over calls, expected evidence over the golden list, recovered errors over errors); 'correct tool', 'expected evidence' and 'policy compliant' need a golden set or a policy and read None without one; write/read effects are declared by the tool or inferred from its name (the basis is stated per run); the judge's verdicts are reported beside the grade, never merged into it
