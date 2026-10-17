@@ -1,0 +1,2 @@
+load_config(path) in config.py should read a KEY=VALUE file, ignore blank lines and lines starting
+with "#", strip whitespace around keys and values, and return a dict. Make the tests pass.

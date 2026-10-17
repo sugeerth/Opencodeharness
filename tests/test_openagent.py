@@ -93,6 +93,15 @@ def test_run_check(tmp_path):
     assert not run_check("sleep 5", tmp_path, timeout=1).passed
 
 
+def test_guard_ignores_caches_the_check_writes(tmp_path):
+    (tmp_path / "tests" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "tests" / "t.py").write_text("T")
+    (tmp_path / "tests" / "__pycache__" / "t.cpython-313.pyc").write_bytes(b"old")
+    g = Guard(tmp_path, ["tests/**"])
+    (tmp_path / "tests" / "__pycache__" / "t.cpython-313.pyc").write_bytes(b"new")
+    assert list(g.saved) == ["tests/t.py"] and g.restore() == []
+
+
 def test_guard_restores_changed_and_deleted(tmp_path):
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "a.py").write_text("A")
@@ -115,8 +124,11 @@ def test_prompts():
 
 
 def test_passes_first_try(fake, tmp_path):
-    out = solve("t", ws(tmp_path), CHECK, fake("good"), PRESETS["openagent"])
+    d = ws(tmp_path)
+    out = solve("t", d, CHECK, fake("good"), PRESETS["openagent"])
     assert out.passed and out.repairs == 0 and len(fake.calls()) == 1
+    # OpenCode reads its project directory from $PWD, so it must point at the workspace
+    assert fake.calls()[0]["pwd"] == str(d.resolve())
     assert out.stats.cost == pytest.approx(0.01) and out.stats.tool_calls == 2
 
 
@@ -215,7 +227,7 @@ def test_discover_examples():
     tasks = {t.name: t for t in discover(EXAMPLES)}
     assert {"hello", "fix-average", "slugify", "lru-cache"} <= set(tasks)
     assert tasks["fix-average"].protect == ["tests/**"] and "unittest" in tasks["fix-average"].check
-    assert tasks["hello"].check.startswith("bash ") and tasks["hello"].check.endswith("check.sh")
+    assert tasks["hello"].check == "grep -qx hi hello.txt"
 
 
 def test_bench_and_report(fake, tmp_path):
@@ -260,5 +272,188 @@ def test_cli_bench(fake, tmp_path, capsys):
     assert "baseline" in out and "openagent" in out
 
 
+def test_cli_demo_without_tasks(tmp_path, fake):
+    oc = fake("good")
+    assert main(["demo", "--tasks", str(tmp_path / "missing"), "--binary", oc.binary]) == 2
+
+
 def test_cli_presets(capsys):
     assert main(["presets"]) == 0 and "best-of-3" in capsys.readouterr().out
+
+
+# --- v0.3: loop details ----------------------------------------------------------------------
+
+def test_excerpt_keeps_errors_and_tail():
+    from openagent.verify import excerpt
+    out = "\n".join([f"noise {i}" for i in range(300)] + ["FAIL: test_x", "AssertionError: 1 != 2"]
+                    + [f"tail {i}" for i in range(5)])
+    ex = excerpt(out, max_lines=40, tail=10)
+    assert "FAIL: test_x" in ex and "tail 4" in ex and "lines omitted" in ex and "noise 5" not in ex
+    assert excerpt("short\noutput") == "short\noutput"
+
+
+def test_stalls_when_rounds_change_nothing(fake, tmp_path):
+    d = ws(tmp_path)
+    (d / "hello.txt").write_text("bye\n")  # FAKE_MODE=never writes "bye": no change at all
+    out = solve("t", d, CHECK, fake("never"), Strategy(rounds=5))
+    a = out.attempts[0]
+    assert a.stop == "stalled" and len(a.rounds) == 2 and len(fake.calls()) == 2
+    assert "changed no files" in fake.calls()[1]["argv"][-1]
+
+
+def test_preflight_rejects_unrunnable_check(fake, tmp_path):
+    out = solve("t", ws(tmp_path), "no-such-command-xyz --flag", fake("good"), PRESETS["openagent"])
+    assert not out.passed and "could not run" in out.error and fake.calls() == []
+
+
+def test_preflight_notes_already_passing(fake, tmp_path):
+    out = solve("t", ws(tmp_path), "true", fake("good"), PRESETS["openagent"])
+    assert out.passed and out.to_dict()["already_passing"]
+
+
+def test_cost_budget_stops(fake, tmp_path):
+    out = solve("t", ws(tmp_path), CHECK, fake("never"), Strategy(rounds=5), max_cost=0.005)
+    assert out.attempts[0].stop == "budget" and len(fake.calls()) == 1
+
+
+def test_changes_recorded(fake, tmp_path):
+    d = ws(tmp_path)
+    (d / "old.txt").write_text("x")
+    out = solve("t", d, CHECK, fake("good"), PRESETS["openagent"])
+    assert out.best.changes["added"] == ["hello.txt"] and out.attempts[0].rounds[0].changed == ["hello.txt"]
+
+
+def test_stop_reasons(fake, tmp_path):
+    assert solve("t", ws(tmp_path, "a"), CHECK, fake("good")).best.stop == "passed"
+    assert solve("t", ws(tmp_path, "b"), CHECK, fake("crash")).best.stop == "infra_error"
+
+
+# --- traces for AgentDiff ------------------------------------------------------------------------
+
+def _trajectory(fake, tmp_path, mode="repair", **kw):
+    from openagent.traces import to_trajectory
+    out = solve("say hi", ws(tmp_path), CHECK, fake(mode), PRESETS["openagent"])
+    return out, to_trajectory(out, "hello", "say hi", CHECK, 1, "m/x", **kw)
+
+
+def test_trajectory_shape(fake, tmp_path):
+    out, t = _trajectory(fake, tmp_path)
+    names = [s["name"] for s in t["steps"]]
+    assert t["schema_version"] == 1 and t["trace_id"] == "hello__openagent__r1"
+    assert names.count("openagent.check") == 2 and names.count("openagent.repair") == 1
+    assert t["steps"][-1]["type"] == "answer" and [s["index"] for s in t["steps"]] == list(range(len(t["steps"])))
+    assert t["outcome"]["success"] and t["totals"]["cost_usd"] == pytest.approx(0.02)
+    tokens = sum(s.get("tokens", 0) for s in t["steps"])
+    assert tokens == out.stats.total_tokens
+    assert {s["type"] for s in t["steps"]} <= {"plan", "search", "retrieve", "read", "tool_call", "reason", "answer"}
+
+
+def test_trajectory_uses_held_out_grade(fake, tmp_path):
+    _, t = _trajectory(fake, tmp_path, mode="good", graded=False, grade_output="hidden test failed",
+                       synthetic="scripted")
+    assert t["outcome"]["success"] is False and "held-out grade failed" in t["outcome"]["answer"]
+    assert t["harness"]["graded_by"] == "grade" and t["harness"]["note"].startswith("SYNTHETIC")
+
+
+def test_trajectory_validates_with_agentdiff(fake, tmp_path):
+    trace = pytest.importorskip("agentdiff.trace")
+    _, t = _trajectory(fake, tmp_path)
+    traj = trace.Trajectory.from_dict(t)
+    assert traj.outcome.success and traj.steps[-1].type == "answer" and traj.outcome.termination == "agent_stop"
+    process = pytest.importorskip("agentdiff.process")
+    write = next(st for st in traj.steps if st.name == "write")
+    assert process.effect_of(write) == ("write", "declared") and process.is_error(write) == (False, "declared")
+
+
+def test_trace_names_are_safe():
+    from openagent.traces import safe_name
+    assert safe_name("best-of-3") == "best-of-3" and "__" not in safe_name("a__b c")
+
+
+# --- bench: grading and the keep rule -------------------------------------------------------------
+
+def test_bench_held_out_grade_and_traces(fake, tmp_path):
+    t = Task("g", "x", check=CHECK, grade="false")
+    (r,) = run_bench([t], [PRESETS["openagent"]], fake("good"), traces_dir=tmp_path / "traces")
+    assert r["check_passed"] and r["graded"] is False and r["passed"] is False
+    assert (tmp_path / r["trace"]).is_file() and r["trace"].startswith("traces/openagent/")
+
+
+def test_task_placeholder(tmp_path):
+    d = tmp_path / "t"
+    d.mkdir()
+    (d / "prompt.txt").write_text("p")
+    (d / "task.json").write_text(json.dumps({"check": "test -f x", "grade": "bash {task}/hidden.sh"}))
+    t = Task.load(d)
+    assert t.grade == f"bash {d.resolve()}/hidden.sh"
+
+
+def test_paired_keep_rule_and_sign_test():
+    from openagent.bench import paired, sign_test
+    rows = [{"task": t, "strategy": s, "passed": p} for t, s, p in [
+        ("a", "baseline", False), ("a", "x", True), ("b", "baseline", True), ("b", "x", True),
+        ("a", "y", True), ("b", "y", False)]]
+    pr = {r["strategy"]: r for r in paired(rows)}
+    assert pr["x"]["verdict"] == "keep" and pr["x"]["wins"] == ["a"]
+    assert pr["y"]["verdict"].startswith("no difference") or pr["y"]["verdict"] == "revert"
+    assert sign_test(0, 0) is None and sign_test(10, 0) == pytest.approx(2 / 1024)
+
+
+# --- the scripted model ------------------------------------------------------------------------
+
+def _policy(tmp_path):
+    from openagent.sim import Playbook, Policy
+    d = tmp_path / "task"
+    (d / "sim").mkdir(parents=True)
+    (d / "prompt.txt").write_text('Make "it" work\nplease.')
+    (d / "sim" / "fix.py").write_text("fixed")
+    (d / "sim.json").write_text(json.dumps({
+        "first": [{"read": "a.py"}, {"say": "first done"}],
+        "verify": [{"bash": "make test"}, {"say": "verified"}],
+        "repair": [[{"write": "a.py", "from": "sim/fix.py"}, {"say": "repaired"}]]}))
+    return Policy([Playbook.load(d)])
+
+
+def _body(*msgs):
+    system = {"role": "system", "content": "<env>\n  Working directory: /w\n</env>"}
+    return {"tools": [{}], "messages": [system, *msgs]}
+
+
+def test_policy_first_turn_decodes_opencode_strings(tmp_path):
+    p = _policy(tmp_path)
+    user = {"role": "user", "content": json.dumps('Make "it" work\nplease.').replace("\\n", "\n")}
+    assert p.respond(_body(user)) == {"tool": "read", "args": {"filePath": "/w/a.py"}}
+    after = _body(user, {"role": "assistant", "content": ""}, {"role": "tool", "content": "..."})
+    assert p.respond(after) == {"text": "first done"}
+
+
+def test_policy_guided_turn_runs_verify_steps(tmp_path):
+    from openagent.sim import GUIDANCE_MARK
+    p = _policy(tmp_path)
+    user = {"role": "user", "content": f"- {GUIDANCE_MARK} and fix.\n\nTask:\nMake \"it\" work\nplease."}
+    a = {"role": "assistant", "content": ""}
+    assert p.respond(_body(user, a))["tool"] == "bash"  # the closing "say" gave way to verify
+    assert p.respond(_body(user, a, a)) == {"text": "verified"}
+
+
+def test_policy_repair_turn(tmp_path):
+    p = _policy(tmp_path)
+    msgs = [{"role": "user", "content": 'Make "it" work\nplease.'}, {"role": "assistant", "content": "x"},
+            {"role": "user", "content": "Verification failed (repair 1 of 3). ..."}]
+    assert p.respond(_body(*msgs)) == {"tool": "write", "args": {"filePath": "/w/a.py", "content": "fixed"}}
+    assert p.respond({"messages": msgs}) == {"text": "Scripted run"}  # title request: no tools
+
+
+# --- end to end with the real OpenCode (skipped where it isn't installed) -------------------------
+
+@pytest.mark.skipif(not __import__("shutil").which("opencode"), reason="OpenCode is not installed")
+def test_demo_end_to_end_with_real_opencode(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    # a relative output directory: the scripted model's config path must still resolve inside workspaces
+    code = main(["demo", "--only", "hello", "--only", "fix-average", "--preset", "baseline",
+                 "--preset", "openagent", "--timeout", "120", "-o", "demo"])
+    res = json.loads((tmp_path / "demo" / "results.json").read_text())
+    got = {(r["task"], r["strategy"]): r["passed"] for r in res["results"]}
+    assert code == 0 and got == {("hello", "baseline"): True, ("hello", "openagent"): True,
+                                 ("fix-average", "baseline"): False, ("fix-average", "openagent"): True}
+    assert list(tmp_path.iterdir()) == [tmp_path / "demo"]  # nothing leaked outside the workspaces

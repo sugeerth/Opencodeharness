@@ -1,6 +1,7 @@
 """Verification: run a check command, and keep the agent from passing by editing the checks."""
 import hashlib
 import os
+import re
 import signal
 import subprocess
 import time
@@ -56,7 +57,9 @@ class Guard:
                 # Before Python 3.13 a trailing "**" matches only directories, so expand them.
                 for f in (p.rglob("*") if p.is_dir() else [p]):
                     rel = f.relative_to(self.root)
-                    if f.is_file() and not f.is_symlink() and ".git" not in rel.parts:
+                    # Caches (e.g. __pycache__) are rewritten by running the check itself, not by the agent.
+                    if (f.is_file() and not f.is_symlink() and not SKIP_DIRS.intersection(rel.parts)
+                            and f.suffix not in CACHE_SUFFIXES):
                         found.add(rel.as_posix())
         return sorted(found)
 
@@ -80,3 +83,66 @@ class Guard:
 
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+# Lines worth showing the agent from a failing check, wherever they are in the output.
+_SIGNAL = re.compile(r"FAIL|ERROR|Error|error[:\[]|Traceback|assert|Assert|[Ee]xpected|panic|"
+                     r"not ok|✗|✕|×|exception|Exception|undefined|cannot|Cannot|No such file")
+
+
+def excerpt(output: str, max_lines: int = 120, tail: int = 30) -> str:
+    """The parts of a check's output that explain the failure: lines that look like errors or
+    assertions (with a line of context each side), then the tail, de-duplicated, in order."""
+    lines = output.rstrip().splitlines()
+    if len(lines) <= max_lines:
+        return "\n".join(lines)
+    keep: set[int] = set(range(max(0, len(lines) - tail), len(lines)))
+    for i, line in enumerate(lines):
+        if _SIGNAL.search(line):
+            keep.update(range(max(0, i - 1), min(len(lines), i + 2)))
+    idx = sorted(keep)
+    if len(idx) > max_lines:  # too many signal lines: keep the first ones and the tail
+        tail_idx = idx[-tail:]
+        idx = sorted(set(idx[: max_lines - tail]) | set(tail_idx))
+    out, prev = [], -1
+    for i in idx:
+        if i != prev + 1:
+            out.append(f"... [{i - prev - 1} lines omitted]")
+        out.append(lines[i])
+        prev = i
+    if prev < len(lines) - 1:
+        out.append(f"... [{len(lines) - 1 - prev} lines omitted]")
+    return "\n".join(out)
+
+
+CACHE_SUFFIXES = {".pyc", ".pyo"}
+SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", ".mypy_cache", ".pytest_cache",
+             ".ruff_cache", "target", "dist", "build", ".next", ".tox", ".opencode"}
+
+
+def fingerprint(root: str | Path, max_files: int = 50_000) -> dict[str, str]:
+    """{relative path: content digest} for the workspace, skipping VCS, dependency and cache dirs.
+    Used to see what a round changed and to notice rounds that changed nothing."""
+    root = Path(root)
+    out: dict[str, str] = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        for name in sorted(filenames):
+            p = Path(dirpath) / name
+            if p.is_symlink() or not p.is_file():
+                continue
+            try:
+                st = p.stat()
+                out[p.relative_to(root).as_posix()] = (
+                    _digest(p.read_bytes()) if st.st_size <= 4_000_000 else f"{st.st_size}:{st.st_mtime_ns}")
+            except OSError:
+                continue
+            if len(out) >= max_files:
+                return out
+    return out
+
+
+def changes(before: dict[str, str], after: dict[str, str]) -> dict[str, list[str]]:
+    return {"added": sorted(set(after) - set(before)),
+            "modified": sorted(k for k in set(before) & set(after) if before[k] != after[k]),
+            "deleted": sorted(set(before) - set(after))}

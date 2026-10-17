@@ -1,6 +1,6 @@
 [project]
 name = "openagent-harness"
-version = "0.2.0"
+version = "0.3.0"
 description = "Open Agent: make OpenCode verify and repair its own work, with best-of-N and benchmarks"
 readme = "README.md"
 license = { text = "MIT" }

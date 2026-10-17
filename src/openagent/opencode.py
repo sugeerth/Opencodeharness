@@ -16,6 +16,7 @@ class RunResult:
     seconds: float
     stderr: str = ""
     timed_out: bool = False
+    events: list[dict] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -56,7 +57,8 @@ class OpenCode:
 
     def run(self, prompt: str, cwd: str | Path, session: str | None = None) -> RunResult:
         start = time.monotonic()
-        env = {**os.environ, **(self.env or {})}
+        # OpenCode takes its project directory from $PWD, which Popen's cwd= does not update.
+        env = {**os.environ, **(self.env or {}), "PWD": str(Path(cwd).resolve())}
         try:
             proc = subprocess.Popen(self.command(prompt, session), cwd=cwd, env=env, text=True,
                                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
@@ -71,11 +73,12 @@ class OpenCode:
             timed_out = True
             _kill_group(proc)
             out, err = proc.communicate()
-        stats = summarize(parse_events(out))
+        events = parse_events(out)
+        stats = summarize(events)
         if timed_out:
             stats.errors.append(f"timed out after {self.timeout}s")
         return RunResult(proc.returncode if not timed_out else -1, stats,
-                         time.monotonic() - start, err[-4000:], timed_out)
+                         time.monotonic() - start, err[-4000:], timed_out, events)
 
 
 def _kill_group(proc: subprocess.Popen) -> None:

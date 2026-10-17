@@ -1,0 +1,6 @@
+{"first": [{"read": "config.py"}, {"write": "config.py", "from": "sim/strip.py"},
+           {"say": "load_config now skips comments and blank lines and strips whitespace."}],
+ "verify": [{"bash": "python3 -m unittest discover -s tests -q"}, {"say": "Handled comments, blank lines and whitespace."}],
+ "repair": [[{"read": "config.py"}, {"say": "The parsing logic looks right; the failure may be environmental."}],
+            [{"read": "tests/test_config.py"}, {"say": "I believe config.py is correct as written."}],
+            [{"say": "No further changes."}]]}

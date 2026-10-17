@@ -1,1 +1,2 @@
-{"check": "python3 -m unittest discover -s tests -t . -q", "protect": ["tests/**"]}
+{"check": "python3 -m unittest discover -s tests -q", "protect": ["tests/**"],
+ "grade": "python3 -m unittest discover -s tests -q && cp {task}/grade/test_lru_hidden.py . && python3 -m unittest -q test_lru_hidden"}

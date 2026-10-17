@@ -1,0 +1,6682 @@
+{
+  "meta": {
+    "date": "2026-10-17 21:30",
+    "model": "scripted/coder",
+    "tasks": 6,
+    "repeat": 3,
+    "strategies": [
+      {
+        "name": "baseline",
+        "preamble": false,
+        "reveal_check": false,
+        "rounds": 0,
+        "attempts": 1
+      },
+      {
+        "name": "guided",
+        "preamble": true,
+        "reveal_check": true,
+        "rounds": 0,
+        "attempts": 1
+      },
+      {
+        "name": "openagent",
+        "preamble": true,
+        "reveal_check": true,
+        "rounds": 3,
+        "attempts": 1
+      }
+    ],
+    "synthetic": "OpenCode ran for real, with its own tools and sessions, but the model was a scripted playbook (openagent.sim), not an LLM. These numbers show the workflow, not how well any model or strategy does: the playbooks decide that."
+  },
+  "summary": [
+    {
+      "strategy": "baseline",
+      "runs": 18,
+      "passed": 3,
+      "pass_rate": 0.16666666666666666,
+      "check_passed": 6,
+      "graded_runs": 3,
+      "first_try": 3,
+      "avg_cost": 0.0,
+      "avg_tokens": 7614.166666666667,
+      "avg_seconds": 6.085555555555556,
+      "avg_repairs": 0.0,
+      "total_cost": 0.0,
+      "stops": {
+        "failed": 12,
+        "passed": 6
+      }
+    },
+    {
+      "strategy": "guided",
+      "runs": 18,
+      "passed": 6,
+      "pass_rate": 0.3333333333333333,
+      "check_passed": 9,
+      "graded_runs": 3,
+      "first_try": 6,
+      "avg_cost": 0.0,
+      "avg_tokens": 12969.166666666666,
+      "avg_seconds": 6.713888888888889,
+      "avg_repairs": 0.0,
+      "total_cost": 0.0,
+      "stops": {
+        "failed": 9,
+        "passed": 9
+      }
+    },
+    {
+      "strategy": "openagent",
+      "runs": 18,
+      "passed": 12,
+      "pass_rate": 0.6666666666666666,
+      "check_passed": 15,
+      "graded_runs": 3,
+      "first_try": 6,
+      "avg_cost": 0.0,
+      "avg_tokens": 20364.666666666668,
+      "avg_seconds": 11.829444444444444,
+      "avg_repairs": 0.8333333333333334,
+      "total_cost": 0.0,
+      "stops": {
+        "passed": 15,
+        "stalled": 3
+      }
+    }
+  ],
+  "paired": [
+    {
+      "strategy": "guided",
+      "vs": "baseline",
+      "wins": [
+        "slugify"
+      ],
+      "losses": [],
+      "ties": [
+        "fix-average",
+        "fix-config",
+        "hello",
+        "lru-cache",
+        "parse-duration"
+      ],
+      "verdict": "keep",
+      "sign_test_p": 1.0,
+      "note": "fewer than 10 tasks: no sign test can be significant here"
+    },
+    {
+      "strategy": "openagent",
+      "vs": "baseline",
+      "wins": [
+        "fix-average",
+        "parse-duration",
+        "slugify"
+      ],
+      "losses": [],
+      "ties": [
+        "fix-config",
+        "hello",
+        "lru-cache"
+      ],
+      "verdict": "keep",
+      "sign_test_p": 0.25,
+      "note": "fewer than 10 tasks: no sign test can be significant here"
+    }
+  ],
+  "agentdiff": [
+    {
+      "pair": "baseline-vs-guided",
+      "summary": "Agents: A=baseline  B=guided\nPaired inference over 6 task(s): baseline minus guided = -0.1667 \u00b1 0.1667 (95% [-0.4933, 0.16]); sign test p=1.0 \u2014 not distinguishable: only 6 paired task(s) (needs at least 10)\nRuns: {'baseline': 3, 'guided': 3}\n  fix-average: A stable-fail B stable-fail | divergence systematic (tool_selection, rate 1)\n  fix-config: A stable-fail B stable-fail | divergence systematic (tool_selection, rate 1)\n  hello: A stable-pass B stable-pass | divergence none\n  lru-cache: A stable-fail B stable-fail | divergence systematic (tool_selection, rate 1)\n  parse-duration: A stable-fail B stable-fail | divergence systematic (tool_selection, rate 1)\n  slugify: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)\nbaseline fails all runs on 5 task(s) (reproducible); guided fails all runs on 4 task(s) (reproducible). Divergences are systematic on 5 of 6 task(s), so the observed gaps are behavioral, not noise.\nDiagnosis across runs:\n  fix-average / baseline (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for baseline on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  fix-average / guided (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for guided on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  fix-config / baseline (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for baseline on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  fix-config / guided (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for guided on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  lru-cache / baseline (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for baseline on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  lru-cache / guided (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for guided on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  parse-duration / baseline (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for baseline on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  parse-duration / guided (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for guided on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  slugify / baseline (fails 3 of 3): [reproducible] divergence leads the diagnosis in all 3 diagnosed runs \u2014 the cause reproduces, not just the failure\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  1 cause(s) reproduce across every failing run\nReliability (repeated runs):\n  baseline: 3/18 run(s) succeeded across 6 task(s); max_k=3\n    pass^k  k=1:0.167 [0.06, 0.39]  k=2:0.167 [0.00, 0.15]  k=3:0.167 [0.00, 0.06]\n    pass@k  k=1:0.167  k=2:0.167  k=3:0.167\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks\n    outcome   consistency: 1.000 over 6/6 task(s)\n    trajectory consistency: 1.000 over 1/6 task(s)\n    resources  consistency: 0.981 over 6/6 task(s)\n    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)\n    runs advisory [insufficient]: 3 run(s) per task at the thinnest task (median 3, max 3). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.",
+      "out": "agentdiff/baseline-vs-guided/runs",
+      "eval": "agentdiff/baseline-vs-guided/eval"
+    },
+    {
+      "pair": "baseline-vs-openagent",
+      "summary": "Agents: A=baseline  B=openagent\nPaired inference over 6 task(s): baseline minus openagent = -0.5 \u00b1 0.2236 (95% [-0.9383, -0.0617]); sign test p=0.25 \u2014 not distinguishable: only 6 paired task(s) (needs at least 10)\nRuns: {'baseline': 3, 'openagent': 3}\n  fix-average: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)\n  fix-config: A stable-fail B stable-fail | divergence systematic (tool_selection, rate 1)\n  hello: A stable-pass B stable-pass | divergence none\n  lru-cache: A stable-fail B stable-fail | divergence systematic (tool_selection, rate 1)\n  parse-duration: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)\n  slugify: A stable-fail B stable-pass | divergence systematic (tool_selection, rate 1)\nbaseline fails all runs on 5 task(s) (reproducible); openagent fails all runs on 2 task(s) (reproducible). Divergences are systematic on 5 of 6 task(s), so the observed gaps are behavioral, not noise.\nDiagnosis across runs:\n  fix-average / baseline (fails 3 of 3): [reproducible] divergence leads the diagnosis in all 3 diagnosed runs \u2014 the cause reproduces, not just the failure\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  fix-config / baseline (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for baseline on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  fix-config / openagent (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for openagent on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  lru-cache / baseline (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for baseline on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  lru-cache / openagent (fails 3 of 3): [all_contested] every diagnosed run was contested \u2014 the evidence never picks a cause for openagent on this task\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  parse-duration / baseline (fails 3 of 3): [reproducible] divergence leads the diagnosis in all 3 diagnosed runs \u2014 the cause reproduces, not just the failure\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  slugify / baseline (fails 3 of 3): [reproducible] divergence leads the diagnosis in all 3 diagnosed runs \u2014 the cause reproduces, not just the failure\n    spectrum: spectrum needs both classes; this agent has 3 failing and 0 passing run(s)\n  3 cause(s) reproduce across every failing run\nReliability (repeated runs):\n  baseline: 3/18 run(s) succeeded across 6 task(s); max_k=3\n    pass^k  k=1:0.167 [0.06, 0.39]  k=2:0.167 [0.00, 0.15]  k=3:0.167 [0.00, 0.06]\n    pass@k  k=1:0.167  k=2:0.167  k=3:0.167\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks\n    outcome   consistency: 1.000 over 6/6 task(s)\n    trajectory consistency: 1.000 over 1/6 task(s)\n    resources  consistency: 0.981 over 6/6 task(s)\n    ICC(1): 1.000 (0% of variance is within-task, i.e. the agent itself)\n    runs advisory [insufficient]: 3 run(s) per task at the thinnest task (median 3, max 3). That is below the 5-run mark where a difference between two agents starts to mean anything: treat everything here as descriptive of these runs only. 8-16 runs is the defensible floor for structured tool-use tasks, 32+ for open-ended reasoning.\n  openagent: 12/18 run(s) succeeded across 6 task(s); max_k=3\n    pass^k  k=1:0.667 [0.44, 0.84]  k=2:0.667 [0.19, 0.70]  k=3:0.667 [0.08, 0.59]\n    pass@k  k=1:0.667  k=2:0.667  k=3:0.667\n    interval: plug-in: the 95% Wilson interval of the pooled per-run success rate, raised to k; treats runs as exchangeable across tasks",
+      "out": "agentdiff/baseline-vs-openagent/runs",
+      "eval": "agentdiff/baseline-vs-openagent/eval"
+    }
+  ],
+  "results": [
+    {
+      "task": "fix-average",
+      "strategy": "baseline",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.48,
+      "stats": {
+        "session_id": "ses_eb43bcce0ffeEitFeHhV3teWLv",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 1
+        },
+        "tokens": {
+          "input": 10279,
+          "output": 116,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10395
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.48,
+          "stats": {
+            "session_id": "ses_eb43bcce0ffeEitFeHhV3teWLv",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 1
+            },
+            "tokens": {
+              "input": 10279,
+              "output": 116,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10395
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.41,
+              "stats": {
+                "session_id": "ses_eb43bcce0ffeEitFeHhV3teWLv",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10279,
+                  "output": 116,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10395
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.06
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/fix-average__baseline__r1.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "baseline",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.92,
+      "stats": {
+        "session_id": "ses_eb43bcc4dffezQuy32YYI1Kgdr",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7463,
+          "output": 144,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7607
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 5.92,
+          "stats": {
+            "session_id": "ses_eb43bcc4dffezQuy32YYI1Kgdr",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7463,
+              "output": 144,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7607
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.84,
+              "stats": {
+                "session_id": "ses_eb43bcc4dffezQuy32YYI1Kgdr",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7463,
+                  "output": 144,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7607
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/fix-config__baseline__r1.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "baseline",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 4.63,
+      "stats": {
+        "session_id": "ses_eb43bcd23ffekBN4omtVnJVxPi",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 4810,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 4847
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 4.63,
+          "stats": {
+            "session_id": "ses_eb43bcd23ffekBN4omtVnJVxPi",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 4810,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 4847
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 4.62,
+              "stats": {
+                "session_id": "ses_eb43bcd23ffekBN4omtVnJVxPi",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 4810,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 4847
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/baseline/hello__baseline__r1.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "baseline",
+      "repeat": 0,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.07,
+      "stats": {
+        "session_id": "ses_eb43bcca9ffePnZZsqDHexJlK0",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7558,
+          "output": 203,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7761
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.07,
+          "stats": {
+            "session_id": "ses_eb43bcca9ffePnZZsqDHexJlK0",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7558,
+              "output": 203,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7761
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.0,
+              "stats": {
+                "session_id": "ses_eb43bcca9ffePnZZsqDHexJlK0",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7558,
+                  "output": 203,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7761
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/baseline/lru-cache__baseline__r1.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "baseline",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.28,
+      "stats": {
+        "session_id": "ses_eb43bbb4fffe7NjFOCHvXOpmhA",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7436,
+          "output": 124,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7560
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 5.28,
+          "stats": {
+            "session_id": "ses_eb43bbb4fffe7NjFOCHvXOpmhA",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7436,
+              "output": 124,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7560
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.21,
+              "stats": {
+                "session_id": "ses_eb43bbb4fffe7NjFOCHvXOpmhA",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7436,
+                  "output": 124,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7560
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.06
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/parse-duration__baseline__r1.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "baseline",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.04,
+      "stats": {
+        "session_id": "ses_eb43bb575ffeImqxLfM7rW6E1K",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7427,
+          "output": 88,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7515
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.04,
+          "stats": {
+            "session_id": "ses_eb43bb575ffeImqxLfM7rW6E1K",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7427,
+              "output": 88,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7515
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.97,
+              "stats": {
+                "session_id": "ses_eb43bb575ffeImqxLfM7rW6E1K",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7427,
+                  "output": 88,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7515
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/slugify__baseline__r1.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "guided",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.68,
+      "stats": {
+        "session_id": "ses_eb43bb1f3ffeGxuvKM6S0xA8U7",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 2,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 20234,
+          "output": 245,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 20479
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 7.68,
+          "stats": {
+            "session_id": "ses_eb43bb1f3ffeGxuvKM6S0xA8U7",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 2,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 20234,
+              "output": 245,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 20479
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.56,
+              "stats": {
+                "session_id": "ses_eb43bb1f3ffeGxuvKM6S0xA8U7",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 3,
+                  "write": 2,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 20234,
+                  "output": 245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 20479
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/fix-average__guided__r1.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "guided",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.05,
+      "stats": {
+        "session_id": "ses_eb43ba639ffe8uUI7LMSk9LqBl",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10733,
+          "output": 166,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10899
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.05,
+          "stats": {
+            "session_id": "ses_eb43ba639ffe8uUI7LMSk9LqBl",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10733,
+              "output": 166,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10899
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.98,
+              "stats": {
+                "session_id": "ses_eb43ba639ffe8uUI7LMSk9LqBl",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10733,
+                  "output": 166,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10899
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.06
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/fix-config__guided__r1.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "guided",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.05,
+      "stats": {
+        "session_id": "ses_eb43b9c1dffep5eNavjahHjnG0",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 5084,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 5121
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.05,
+          "stats": {
+            "session_id": "ses_eb43b9c1dffep5eNavjahHjnG0",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 5084,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 5121
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.03,
+              "stats": {
+                "session_id": "ses_eb43b9c1dffep5eNavjahHjnG0",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 5084,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 5121
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/guided/hello__guided__r1.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "guided",
+      "repeat": 0,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.6,
+      "stats": {
+        "session_id": "ses_eb43b9567ffe0nd3BnpjJ5UGJB",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10704,
+          "output": 235,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10939
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.6,
+          "stats": {
+            "session_id": "ses_eb43b9567ffe0nd3BnpjJ5UGJB",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10704,
+              "output": 235,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10939
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.49,
+              "stats": {
+                "session_id": "ses_eb43b9567ffe0nd3BnpjJ5UGJB",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10704,
+                  "output": 235,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10939
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.11
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/guided/lru-cache__guided__r1.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "guided",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.9,
+      "stats": {
+        "session_id": "ses_eb43b9023ffeF0iATE2UBH0p9c",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10652,
+          "output": 153,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10805
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.9,
+          "stats": {
+            "session_id": "ses_eb43b9023ffeF0iATE2UBH0p9c",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10652,
+              "output": 153,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10805
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.8,
+              "stats": {
+                "session_id": "ses_eb43b9023ffeF0iATE2UBH0p9c",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10652,
+                  "output": 153,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10805
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.1
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/parse-duration__guided__r1.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "guided",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.97,
+      "stats": {
+        "session_id": "ses_eb43b8e5dffeWZhBIz6NaZBbTY",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 2,
+          "bash": 2
+        },
+        "tokens": {
+          "input": 19309,
+          "output": 263,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 19572
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.97,
+          "stats": {
+            "session_id": "ses_eb43b8e5dffeWZhBIz6NaZBbTY",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 2,
+              "bash": 2
+            },
+            "tokens": {
+              "input": 19309,
+              "output": 263,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 19572
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.9,
+              "stats": {
+                "session_id": "ses_eb43b8e5dffeWZhBIz6NaZBbTY",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 2,
+                  "bash": 2
+                },
+                "tokens": {
+                  "input": 19309,
+                  "output": 263,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 19572
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/guided/slugify__guided__r1.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "openagent",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 1,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 12.85,
+      "stats": {
+        "session_id": "ses_eb43b8510ffehXGdrap2Wpwfwq",
+        "steps": 10,
+        "tool_calls": 8,
+        "tool_errors": 0,
+        "tools": {
+          "read": 4,
+          "write": 3,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 30618,
+          "output": 368,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 30986
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 12.85,
+          "stats": {
+            "session_id": "ses_eb43b8510ffehXGdrap2Wpwfwq",
+            "steps": 10,
+            "tool_calls": 8,
+            "tool_errors": 0,
+            "tools": {
+              "read": 4,
+              "write": 3,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 30618,
+              "output": 368,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 30986
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.8,
+              "stats": {
+                "session_id": "ses_eb43b8510ffehXGdrap2Wpwfwq",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 3,
+                  "write": 2,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 20234,
+                  "output": 245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 20479
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.9,
+              "stats": {
+                "session_id": "ses_eb43b8510ffehXGdrap2Wpwfwq",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10384,
+                  "output": 123,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10507
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/fix-average__openagent__r1.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "openagent",
+      "repeat": 0,
+      "passed": false,
+      "winner": null,
+      "repairs": 2,
+      "stop": "stalled",
+      "error": "",
+      "already_passing": false,
+      "seconds": 18.95,
+      "stats": {
+        "session_id": "ses_eb43b743bffeETPJKm7hxicGVH",
+        "steps": 8,
+        "tool_calls": 5,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 24229,
+          "output": 245,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 24474
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "stalled",
+          "seconds": 18.95,
+          "stats": {
+            "session_id": "ses_eb43b743bffeETPJKm7hxicGVH",
+            "steps": 8,
+            "tool_calls": 5,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 24229,
+              "output": 245,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 24474
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.75,
+              "stats": {
+                "session_id": "ses_eb43b743bffeETPJKm7hxicGVH",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10733,
+                  "output": 166,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10899
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.1
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.9,
+              "stats": {
+                "session_id": "ses_eb43b743bffeETPJKm7hxicGVH",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1
+                },
+                "tokens": {
+                  "input": 6307,
+                  "output": 41,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 6348
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": []
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.0,
+              "stats": {
+                "session_id": "ses_eb43b743bffeETPJKm7hxicGVH",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1
+                },
+                "tokens": {
+                  "input": 7189,
+                  "output": 38,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7227
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": []
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/openagent/fix-config__openagent__r1.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "openagent",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.01,
+      "stats": {
+        "session_id": "ses_eb43b7252ffeNMfqwRsdyixE1V",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 5084,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 5121
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.01,
+          "stats": {
+            "session_id": "ses_eb43b7252ffeNMfqwRsdyixE1V",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 5084,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 5121
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.0,
+              "stats": {
+                "session_id": "ses_eb43b7252ffeNMfqwRsdyixE1V",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 5084,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 5121
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/hello__openagent__r1.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "openagent",
+      "repeat": 0,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.92,
+      "stats": {
+        "session_id": "ses_eb43b5a42ffefzr3mTyuJIqk76",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10704,
+          "output": 235,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10939
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.92,
+          "stats": {
+            "session_id": "ses_eb43b5a42ffefzr3mTyuJIqk76",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10704,
+              "output": 235,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10939
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.78,
+              "stats": {
+                "session_id": "ses_eb43b5a42ffefzr3mTyuJIqk76",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10704,
+                  "output": 235,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10939
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.14
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/openagent/lru-cache__openagent__r1.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "openagent",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 2,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 19.48,
+      "stats": {
+        "session_id": "ses_eb43b5491ffeowtFZCzN4oAHVW",
+        "steps": 10,
+        "tool_calls": 7,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 2,
+          "bash": 1,
+          "edit": 1
+        },
+        "tokens": {
+          "input": 30685,
+          "output": 411,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 31096
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 19.48,
+          "stats": {
+            "session_id": "ses_eb43b5491ffeowtFZCzN4oAHVW",
+            "steps": 10,
+            "tool_calls": 7,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 2,
+              "bash": 1,
+              "edit": 1
+            },
+            "tokens": {
+              "input": 30685,
+              "output": 411,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 31096
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.07,
+              "stats": {
+                "session_id": "ses_eb43b5491ffeowtFZCzN4oAHVW",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10652,
+                  "output": 153,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10805
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.14
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.12,
+              "stats": {
+                "session_id": "ses_eb43b5491ffeowtFZCzN4oAHVW",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "edit": 1
+                },
+                "tokens": {
+                  "input": 9406,
+                  "output": 95,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 9501
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.06
+              },
+              "tampered": [
+                "tests/test_duration.py"
+              ],
+              "changed": []
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.0,
+              "stats": {
+                "session_id": "ses_eb43b5491ffeowtFZCzN4oAHVW",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10627,
+                  "output": 163,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10790
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/parse-duration__openagent__r1.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "openagent",
+      "repeat": 0,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.5,
+      "stats": {
+        "session_id": "ses_eb43b52caffegM0a88dZAYbFAp",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 2,
+          "bash": 2
+        },
+        "tokens": {
+          "input": 19309,
+          "output": 263,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 19572
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 7.5,
+          "stats": {
+            "session_id": "ses_eb43b52caffegM0a88dZAYbFAp",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 2,
+              "bash": 2
+            },
+            "tokens": {
+              "input": 19309,
+              "output": 263,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 19572
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.4,
+              "stats": {
+                "session_id": "ses_eb43b52caffegM0a88dZAYbFAp",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 2,
+                  "bash": 2
+                },
+                "tokens": {
+                  "input": 19309,
+                  "output": 263,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 19572
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.1
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/slugify__openagent__r1.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "baseline",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.76,
+      "stats": {
+        "session_id": "ses_eb43b350affekY2fA3TXZT0yei",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 1
+        },
+        "tokens": {
+          "input": 10279,
+          "output": 116,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10395
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.76,
+          "stats": {
+            "session_id": "ses_eb43b350affekY2fA3TXZT0yei",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 1
+            },
+            "tokens": {
+              "input": 10279,
+              "output": 116,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10395
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.65,
+              "stats": {
+                "session_id": "ses_eb43b350affekY2fA3TXZT0yei",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10279,
+                  "output": 116,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10395
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.1
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/fix-average__baseline__r2.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "baseline",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.09,
+      "stats": {
+        "session_id": "ses_eb43b29edffegLAT2wVhi1fuVv",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7463,
+          "output": 144,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7607
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.09,
+          "stats": {
+            "session_id": "ses_eb43b29edffegLAT2wVhi1fuVv",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7463,
+              "output": 144,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7607
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.95,
+              "stats": {
+                "session_id": "ses_eb43b29edffegLAT2wVhi1fuVv",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7463,
+                  "output": 144,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7607
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.14
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/fix-config__baseline__r2.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "baseline",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.52,
+      "stats": {
+        "session_id": "ses_eb43b1978ffebQzNpmLJRkn53M",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 4810,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 4847
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.52,
+          "stats": {
+            "session_id": "ses_eb43b1978ffebQzNpmLJRkn53M",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 4810,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 4847
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.51,
+              "stats": {
+                "session_id": "ses_eb43b1978ffebQzNpmLJRkn53M",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 4810,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 4847
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/baseline/hello__baseline__r2.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "baseline",
+      "repeat": 1,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.97,
+      "stats": {
+        "session_id": "ses_eb43b1a35ffesw34PPP0xlxSt7",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7558,
+          "output": 203,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7761
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 5.97,
+          "stats": {
+            "session_id": "ses_eb43b1a35ffesw34PPP0xlxSt7",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7558,
+              "output": 203,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7761
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.89,
+              "stats": {
+                "session_id": "ses_eb43b1a35ffesw34PPP0xlxSt7",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7558,
+                  "output": 203,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7761
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/baseline/lru-cache__baseline__r2.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "baseline",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.65,
+      "stats": {
+        "session_id": "ses_eb43b12dfffebRIzWK7ojG6FGC",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7436,
+          "output": 124,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7560
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 5.65,
+          "stats": {
+            "session_id": "ses_eb43b12dfffebRIzWK7ojG6FGC",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7436,
+              "output": 124,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7560
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.53,
+              "stats": {
+                "session_id": "ses_eb43b12dfffebRIzWK7ojG6FGC",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7436,
+                  "output": 124,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7560
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/parse-duration__baseline__r2.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "baseline",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.92,
+      "stats": {
+        "session_id": "ses_eb43b08f1ffeNMTr8wg825S9cM",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7427,
+          "output": 88,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7515
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 5.92,
+          "stats": {
+            "session_id": "ses_eb43b08f1ffeNMTr8wg825S9cM",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7427,
+              "output": 88,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7515
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.78,
+              "stats": {
+                "session_id": "ses_eb43b08f1ffeNMTr8wg825S9cM",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7427,
+                  "output": 88,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7515
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.14
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/slugify__baseline__r2.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "guided",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.28,
+      "stats": {
+        "session_id": "ses_eb43b005fffeZ3RiB48sQQY2hr",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 2,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 20234,
+          "output": 245,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 20479
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 7.28,
+          "stats": {
+            "session_id": "ses_eb43b005fffeZ3RiB48sQQY2hr",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 2,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 20234,
+              "output": 245,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 20479
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.21,
+              "stats": {
+                "session_id": "ses_eb43b005fffeZ3RiB48sQQY2hr",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 3,
+                  "write": 2,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 20234,
+                  "output": 245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 20479
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/fix-average__guided__r2.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "guided",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.72,
+      "stats": {
+        "session_id": "ses_eb43afc31ffeSR6TlFGSmGqbx1",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10733,
+          "output": 166,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10899
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.72,
+          "stats": {
+            "session_id": "ses_eb43afc31ffeSR6TlFGSmGqbx1",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10733,
+              "output": 166,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10899
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.65,
+              "stats": {
+                "session_id": "ses_eb43afc31ffeSR6TlFGSmGqbx1",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10733,
+                  "output": 166,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10899
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.06
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/fix-config__guided__r2.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "guided",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.81,
+      "stats": {
+        "session_id": "ses_eb43af06fffeIy3bMMOqJ5oDIN",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 5084,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 5121
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 5.81,
+          "stats": {
+            "session_id": "ses_eb43af06fffeIy3bMMOqJ5oDIN",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 5084,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 5121
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.8,
+              "stats": {
+                "session_id": "ses_eb43af06fffeIy3bMMOqJ5oDIN",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 5084,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 5121
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/guided/hello__guided__r2.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "guided",
+      "repeat": 1,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.05,
+      "stats": {
+        "session_id": "ses_eb43ae48dffeTAMgtPTqi30zRg",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10704,
+          "output": 235,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10939
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 7.05,
+          "stats": {
+            "session_id": "ses_eb43ae48dffeTAMgtPTqi30zRg",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10704,
+              "output": 235,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10939
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.94,
+              "stats": {
+                "session_id": "ses_eb43ae48dffeTAMgtPTqi30zRg",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10704,
+                  "output": 235,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10939
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.11
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/guided/lru-cache__guided__r2.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "guided",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.21,
+      "stats": {
+        "session_id": "ses_eb43ae085ffe4l6qpgA5oNF1Mo",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10652,
+          "output": 153,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10805
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 7.21,
+          "stats": {
+            "session_id": "ses_eb43ae085ffe4l6qpgA5oNF1Mo",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10652,
+              "output": 153,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10805
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.06,
+              "stats": {
+                "session_id": "ses_eb43ae085ffe4l6qpgA5oNF1Mo",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10652,
+                  "output": 153,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10805
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.15
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/parse-duration__guided__r2.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "guided",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.29,
+      "stats": {
+        "session_id": "ses_eb43add9cffePCfvc1AWdwLrf2",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 2,
+          "bash": 2
+        },
+        "tokens": {
+          "input": 19309,
+          "output": 263,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 19572
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 7.29,
+          "stats": {
+            "session_id": "ses_eb43add9cffePCfvc1AWdwLrf2",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 2,
+              "bash": 2
+            },
+            "tokens": {
+              "input": 19309,
+              "output": 263,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 19572
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.2,
+              "stats": {
+                "session_id": "ses_eb43add9cffePCfvc1AWdwLrf2",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 2,
+                  "bash": 2
+                },
+                "tokens": {
+                  "input": 19309,
+                  "output": 263,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 19572
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/guided/slugify__guided__r2.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "openagent",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 1,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 12.71,
+      "stats": {
+        "session_id": "ses_eb43adb82ffeB8sFByIEd9HO2k",
+        "steps": 10,
+        "tool_calls": 8,
+        "tool_errors": 0,
+        "tools": {
+          "read": 4,
+          "write": 3,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 30618,
+          "output": 368,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 30986
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 12.71,
+          "stats": {
+            "session_id": "ses_eb43adb82ffeB8sFByIEd9HO2k",
+            "steps": 10,
+            "tool_calls": 8,
+            "tool_errors": 0,
+            "tools": {
+              "read": 4,
+              "write": 3,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 30618,
+              "output": 368,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 30986
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.83,
+              "stats": {
+                "session_id": "ses_eb43adb82ffeB8sFByIEd9HO2k",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 3,
+                  "write": 2,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 20234,
+                  "output": 245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 20479
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.74,
+              "stats": {
+                "session_id": "ses_eb43adb82ffeB8sFByIEd9HO2k",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10384,
+                  "output": 123,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10507
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.06
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/fix-average__openagent__r2.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "openagent",
+      "repeat": 1,
+      "passed": false,
+      "winner": null,
+      "repairs": 2,
+      "stop": "stalled",
+      "error": "",
+      "already_passing": false,
+      "seconds": 18.49,
+      "stats": {
+        "session_id": "ses_eb43ac3f3ffe0LILh1qUcxIv34",
+        "steps": 8,
+        "tool_calls": 5,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 24229,
+          "output": 245,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 24474
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "stalled",
+          "seconds": 18.49,
+          "stats": {
+            "session_id": "ses_eb43ac3f3ffe0LILh1qUcxIv34",
+            "steps": 8,
+            "tool_calls": 5,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 24229,
+              "output": 245,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 24474
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.61,
+              "stats": {
+                "session_id": "ses_eb43ac3f3ffe0LILh1qUcxIv34",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10733,
+                  "output": 166,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10899
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.1
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.75,
+              "stats": {
+                "session_id": "ses_eb43ac3f3ffe0LILh1qUcxIv34",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1
+                },
+                "tokens": {
+                  "input": 6307,
+                  "output": 41,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 6348
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": []
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.83,
+              "stats": {
+                "session_id": "ses_eb43ac3f3ffe0LILh1qUcxIv34",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1
+                },
+                "tokens": {
+                  "input": 7189,
+                  "output": 38,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7227
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.11
+              },
+              "tampered": [],
+              "changed": []
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/openagent/fix-config__openagent__r2.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "openagent",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.85,
+      "stats": {
+        "session_id": "ses_eb43ac029ffeLsvt0tWVcswic3",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 5084,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 5121
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 5.85,
+          "stats": {
+            "session_id": "ses_eb43ac029ffeLsvt0tWVcswic3",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 5084,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 5121
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.84,
+              "stats": {
+                "session_id": "ses_eb43ac029ffeLsvt0tWVcswic3",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 5084,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 5121
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.0
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/hello__openagent__r2.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "openagent",
+      "repeat": 1,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.43,
+      "stats": {
+        "session_id": "ses_eb43aaab0ffehbfeapQOs8j9vL",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10704,
+          "output": 235,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10939
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.43,
+          "stats": {
+            "session_id": "ses_eb43aaab0ffehbfeapQOs8j9vL",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10704,
+              "output": 235,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10939
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.34,
+              "stats": {
+                "session_id": "ses_eb43aaab0ffehbfeapQOs8j9vL",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10704,
+                  "output": 235,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10939
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/openagent/lru-cache__openagent__r2.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "openagent",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 2,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 19.34,
+      "stats": {
+        "session_id": "ses_eb43aa972ffeh8r55MSj7frz01",
+        "steps": 10,
+        "tool_calls": 7,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 2,
+          "bash": 1,
+          "edit": 1
+        },
+        "tokens": {
+          "input": 30685,
+          "output": 411,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 31096
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 19.34,
+          "stats": {
+            "session_id": "ses_eb43aa972ffeh8r55MSj7frz01",
+            "steps": 10,
+            "tool_calls": 7,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 2,
+              "bash": 1,
+              "edit": 1
+            },
+            "tokens": {
+              "input": 30685,
+              "output": 411,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 31096
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.48,
+              "stats": {
+                "session_id": "ses_eb43aa972ffeh8r55MSj7frz01",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10652,
+                  "output": 153,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10805
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.07,
+              "stats": {
+                "session_id": "ses_eb43aa972ffeh8r55MSj7frz01",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "edit": 1
+                },
+                "tokens": {
+                  "input": 9406,
+                  "output": 95,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 9501
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.09
+              },
+              "tampered": [
+                "tests/test_duration.py"
+              ],
+              "changed": []
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.54,
+              "stats": {
+                "session_id": "ses_eb43aa972ffeh8r55MSj7frz01",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10627,
+                  "output": 163,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10790
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/parse-duration__openagent__r2.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "openagent",
+      "repeat": 1,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.41,
+      "stats": {
+        "session_id": "ses_eb43aa379ffefae9xfe3UGK3Gw",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 2,
+          "bash": 2
+        },
+        "tokens": {
+          "input": 19309,
+          "output": 263,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 19572
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 7.41,
+          "stats": {
+            "session_id": "ses_eb43aa379ffefae9xfe3UGK3Gw",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 2,
+              "bash": 2
+            },
+            "tokens": {
+              "input": 19309,
+              "output": 263,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 19572
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.35,
+              "stats": {
+                "session_id": "ses_eb43aa379ffefae9xfe3UGK3Gw",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 2,
+                  "bash": 2
+                },
+                "tokens": {
+                  "input": 19309,
+                  "output": 263,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 19572
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/slugify__openagent__r2.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "baseline",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.51,
+      "stats": {
+        "session_id": "ses_eb43a86baffe4Cx4SpyKXPRA3K",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 1
+        },
+        "tokens": {
+          "input": 10279,
+          "output": 116,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10395
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.51,
+          "stats": {
+            "session_id": "ses_eb43a86baffe4Cx4SpyKXPRA3K",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 1
+            },
+            "tokens": {
+              "input": 10279,
+              "output": 116,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10395
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.42,
+              "stats": {
+                "session_id": "ses_eb43a86baffe4Cx4SpyKXPRA3K",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10279,
+                  "output": 116,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10395
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/fix-average__baseline__r3.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "baseline",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.32,
+      "stats": {
+        "session_id": "ses_eb43a7b7dffeOrTzO8f2gXR0lu",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7463,
+          "output": 144,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7607
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.32,
+          "stats": {
+            "session_id": "ses_eb43a7b7dffeOrTzO8f2gXR0lu",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7463,
+              "output": 144,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7607
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.23,
+              "stats": {
+                "session_id": "ses_eb43a7b7dffeOrTzO8f2gXR0lu",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7463,
+                  "output": 144,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7607
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/fix-config__baseline__r3.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "baseline",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.14,
+      "stats": {
+        "session_id": "ses_eb43a6d11ffeBDQqP9ZubNzNJn",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 4810,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 4847
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.14,
+          "stats": {
+            "session_id": "ses_eb43a6d11ffeBDQqP9ZubNzNJn",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 4810,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 4847
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.14,
+              "stats": {
+                "session_id": "ses_eb43a6d11ffeBDQqP9ZubNzNJn",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 4810,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 4847
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/baseline/hello__baseline__r3.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "baseline",
+      "repeat": 2,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.91,
+      "stats": {
+        "session_id": "ses_eb43a6979ffe5uyfPU3AU63hqy",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7558,
+          "output": 203,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7761
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.91,
+          "stats": {
+            "session_id": "ses_eb43a6979ffe5uyfPU3AU63hqy",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7558,
+              "output": 203,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7761
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.8,
+              "stats": {
+                "session_id": "ses_eb43a6979ffe5uyfPU3AU63hqy",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7558,
+                  "output": 203,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7761
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/baseline/lru-cache__baseline__r3.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "baseline",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.53,
+      "stats": {
+        "session_id": "ses_eb43a623fffeud4POG7PBloyw2",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7436,
+          "output": 124,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7560
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.53,
+          "stats": {
+            "session_id": "ses_eb43a623fffeud4POG7PBloyw2",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7436,
+              "output": 124,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7560
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.45,
+              "stats": {
+                "session_id": "ses_eb43a623fffeud4POG7PBloyw2",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7436,
+                  "output": 124,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7560
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/parse-duration__baseline__r3.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "baseline",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.8,
+      "stats": {
+        "session_id": "ses_eb43a5d1dffeUxfRwpDtuOgpV6",
+        "steps": 3,
+        "tool_calls": 2,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1
+        },
+        "tokens": {
+          "input": 7427,
+          "output": 88,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 7515
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 5.8,
+          "stats": {
+            "session_id": "ses_eb43a5d1dffeUxfRwpDtuOgpV6",
+            "steps": 3,
+            "tool_calls": 2,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1
+            },
+            "tokens": {
+              "input": 7427,
+              "output": 88,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 7515
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.73,
+              "stats": {
+                "session_id": "ses_eb43a5d1dffeUxfRwpDtuOgpV6",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 7427,
+                  "output": 88,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7515
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/baseline/slugify__baseline__r3.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "guided",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.78,
+      "stats": {
+        "session_id": "ses_eb43a556bffeYP0p94bH9tugfl",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 2,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 20234,
+          "output": 245,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 20479
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.78,
+          "stats": {
+            "session_id": "ses_eb43a556bffeYP0p94bH9tugfl",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 2,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 20234,
+              "output": 245,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 20479
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.66,
+              "stats": {
+                "session_id": "ses_eb43a556bffeYP0p94bH9tugfl",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 3,
+                  "write": 2,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 20234,
+                  "output": 245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 20479
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/fix-average__guided__r3.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "guided",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.68,
+      "stats": {
+        "session_id": "ses_eb43a48f2ffepNwPak6QBaXYiM",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10733,
+          "output": 166,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10899
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.68,
+          "stats": {
+            "session_id": "ses_eb43a48f2ffepNwPak6QBaXYiM",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10733,
+              "output": 166,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10899
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.56,
+              "stats": {
+                "session_id": "ses_eb43a48f2ffepNwPak6QBaXYiM",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10733,
+                  "output": 166,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10899
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/fix-config__guided__r3.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "guided",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.82,
+      "stats": {
+        "session_id": "ses_eb43a4571ffe8510Js7VfvywCm",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 5084,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 5121
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 5.82,
+          "stats": {
+            "session_id": "ses_eb43a4571ffe8510Js7VfvywCm",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 5084,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 5121
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.81,
+              "stats": {
+                "session_id": "ses_eb43a4571ffe8510Js7VfvywCm",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 5084,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 5121
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.0
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/guided/hello__guided__r3.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "guided",
+      "repeat": 2,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.76,
+      "stats": {
+        "session_id": "ses_eb43a391bffeuDX6YLJi46ApOQ",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10704,
+          "output": 235,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10939
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.76,
+          "stats": {
+            "session_id": "ses_eb43a391bffeuDX6YLJi46ApOQ",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10704,
+              "output": 235,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10939
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.69,
+              "stats": {
+                "session_id": "ses_eb43a391bffeuDX6YLJi46ApOQ",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10704,
+                  "output": 235,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10939
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/guided/lru-cache__guided__r3.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "guided",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 0,
+      "stop": "failed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.34,
+      "stats": {
+        "session_id": "ses_eb43a2ed5ffe34zdQmE3V3WSel",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10652,
+          "output": 153,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10805
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "failed",
+          "seconds": 6.34,
+          "stats": {
+            "session_id": "ses_eb43a2ed5ffe34zdQmE3V3WSel",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10652,
+              "output": 153,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10805
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.25,
+              "stats": {
+                "session_id": "ses_eb43a2ed5ffe34zdQmE3V3WSel",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10652,
+                  "output": 153,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10805
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/guided/parse-duration__guided__r3.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "guided",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 6.86,
+      "stats": {
+        "session_id": "ses_eb43a2ef9ffexYYVOQUsxT28s1",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 2,
+          "bash": 2
+        },
+        "tokens": {
+          "input": 19309,
+          "output": 263,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 19572
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 6.86,
+          "stats": {
+            "session_id": "ses_eb43a2ef9ffexYYVOQUsxT28s1",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 2,
+              "bash": 2
+            },
+            "tokens": {
+              "input": 19309,
+              "output": 263,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 19572
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 6.79,
+              "stats": {
+                "session_id": "ses_eb43a2ef9ffexYYVOQUsxT28s1",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 2,
+                  "bash": 2
+                },
+                "tokens": {
+                  "input": 19309,
+                  "output": 263,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 19572
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/guided/slugify__guided__r3.json"
+    },
+    {
+      "task": "fix-average",
+      "strategy": "openagent",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 1,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 14.46,
+      "stats": {
+        "session_id": "ses_eb43a2ab0ffe5yciQlfBlRsOF0",
+        "steps": 10,
+        "tool_calls": 8,
+        "tool_errors": 0,
+        "tools": {
+          "read": 4,
+          "write": 3,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 30618,
+          "output": 368,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 30986
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "stats.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 14.46,
+          "stats": {
+            "session_id": "ses_eb43a2ab0ffe5yciQlfBlRsOF0",
+            "steps": 10,
+            "tool_calls": 8,
+            "tool_errors": 0,
+            "tools": {
+              "read": 4,
+              "write": 3,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 30618,
+              "output": 368,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 30986
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "stats.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.52,
+              "stats": {
+                "session_id": "ses_eb43a2ab0ffe5yciQlfBlRsOF0",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 3,
+                  "write": 2,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 20234,
+                  "output": 245,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 20479
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.1
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.76,
+              "stats": {
+                "session_id": "ses_eb43a2ab0ffe5yciQlfBlRsOF0",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10384,
+                  "output": 123,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10507
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "stats.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/fix-average__openagent__r3.json"
+    },
+    {
+      "task": "fix-config",
+      "strategy": "openagent",
+      "repeat": 2,
+      "passed": false,
+      "winner": null,
+      "repairs": 2,
+      "stop": "stalled",
+      "error": "",
+      "already_passing": false,
+      "seconds": 18.81,
+      "stats": {
+        "session_id": "ses_eb43a1567ffeP9v7fCEMtILPs9",
+        "steps": 8,
+        "tool_calls": 5,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 24229,
+          "output": 245,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 24474
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "config.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": false,
+          "stop": "stalled",
+          "seconds": 18.81,
+          "stats": {
+            "session_id": "ses_eb43a1567ffeP9v7fCEMtILPs9",
+            "steps": 8,
+            "tool_calls": 5,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 24229,
+              "output": 245,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 24474
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "config.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.08,
+              "stats": {
+                "session_id": "ses_eb43a1567ffeP9v7fCEMtILPs9",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10733,
+                  "output": 166,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10899
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "config.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 6.41,
+              "stats": {
+                "session_id": "ses_eb43a1567ffeP9v7fCEMtILPs9",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1
+                },
+                "tokens": {
+                  "input": 6307,
+                  "output": 41,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 6348
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.12
+              },
+              "tampered": [],
+              "changed": []
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.05,
+              "stats": {
+                "session_id": "ses_eb43a1567ffeP9v7fCEMtILPs9",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1
+                },
+                "tokens": {
+                  "input": 7189,
+                  "output": 38,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 7227
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": []
+            }
+          ]
+        }
+      ],
+      "check_passed": false,
+      "graded": null,
+      "trace": "traces/openagent/fix-config__openagent__r3.json"
+    },
+    {
+      "task": "hello",
+      "strategy": "openagent",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 5.98,
+      "stats": {
+        "session_id": "ses_eb43a1405ffe700XAjeAimfAkO",
+        "steps": 2,
+        "tool_calls": 1,
+        "tool_errors": 0,
+        "tools": {
+          "write": 1
+        },
+        "tokens": {
+          "input": 5084,
+          "output": 37,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 5121
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [
+          "hello.txt"
+        ],
+        "modified": [],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 5.98,
+          "stats": {
+            "session_id": "ses_eb43a1405ffe700XAjeAimfAkO",
+            "steps": 2,
+            "tool_calls": 1,
+            "tool_errors": 0,
+            "tools": {
+              "write": 1
+            },
+            "tokens": {
+              "input": 5084,
+              "output": 37,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 5121
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [
+              "hello.txt"
+            ],
+            "modified": [],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 5.97,
+              "stats": {
+                "session_id": "ses_eb43a1405ffe700XAjeAimfAkO",
+                "steps": 2,
+                "tool_calls": 1,
+                "tool_errors": 0,
+                "tools": {
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 5084,
+                  "output": 37,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 5121
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.01
+              },
+              "tampered": [],
+              "changed": [
+                "hello.txt"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/hello__openagent__r3.json"
+    },
+    {
+      "task": "lru-cache",
+      "strategy": "openagent",
+      "repeat": 2,
+      "passed": false,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.13,
+      "stats": {
+        "session_id": "ses_eb439fb5cffemTdKrqWyAECaCq",
+        "steps": 4,
+        "tool_calls": 3,
+        "tool_errors": 0,
+        "tools": {
+          "read": 1,
+          "write": 1,
+          "bash": 1
+        },
+        "tokens": {
+          "input": 10704,
+          "output": 235,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 10939
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "lru.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 7.13,
+          "stats": {
+            "session_id": "ses_eb439fb5cffemTdKrqWyAECaCq",
+            "steps": 4,
+            "tool_calls": 3,
+            "tool_errors": 0,
+            "tools": {
+              "read": 1,
+              "write": 1,
+              "bash": 1
+            },
+            "tokens": {
+              "input": 10704,
+              "output": 235,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 10939
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "lru.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.05,
+              "stats": {
+                "session_id": "ses_eb439fb5cffemTdKrqWyAECaCq",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10704,
+                  "output": 235,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10939
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.08
+              },
+              "tampered": [],
+              "changed": [
+                "lru.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": false,
+      "trace": "traces/openagent/lru-cache__openagent__r3.json"
+    },
+    {
+      "task": "parse-duration",
+      "strategy": "openagent",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 2,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 16.65,
+      "stats": {
+        "session_id": "ses_eb439fa22ffeFT4OCsHeFz1DDu",
+        "steps": 10,
+        "tool_calls": 7,
+        "tool_errors": 0,
+        "tools": {
+          "read": 3,
+          "write": 2,
+          "bash": 1,
+          "edit": 1
+        },
+        "tokens": {
+          "input": 30685,
+          "output": 411,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 31096
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "duration.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 16.65,
+          "stats": {
+            "session_id": "ses_eb439fa22ffeFT4OCsHeFz1DDu",
+            "steps": 10,
+            "tool_calls": 7,
+            "tool_errors": 0,
+            "tools": {
+              "read": 3,
+              "write": 2,
+              "bash": 1,
+              "edit": 1
+            },
+            "tokens": {
+              "input": 30685,
+              "output": 411,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 31096
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "duration.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.14,
+              "stats": {
+                "session_id": "ses_eb439fa22ffeFT4OCsHeFz1DDu",
+                "steps": 4,
+                "tool_calls": 3,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1,
+                  "bash": 1
+                },
+                "tokens": {
+                  "input": 10652,
+                  "output": 153,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10805
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.07
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            },
+            {
+              "exit_code": 0,
+              "seconds": 5.41,
+              "stats": {
+                "session_id": "ses_eb439fa22ffeFT4OCsHeFz1DDu",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "edit": 1
+                },
+                "tokens": {
+                  "input": 9406,
+                  "output": 95,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 9501
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": false,
+                "exit_code": 1,
+                "seconds": 0.06
+              },
+              "tampered": [
+                "tests/test_duration.py"
+              ],
+              "changed": []
+            },
+            {
+              "exit_code": 0,
+              "seconds": 3.91,
+              "stats": {
+                "session_id": "ses_eb439fa22ffeFT4OCsHeFz1DDu",
+                "steps": 3,
+                "tool_calls": 2,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 1,
+                  "write": 1
+                },
+                "tokens": {
+                  "input": 10627,
+                  "output": 163,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 10790
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.06
+              },
+              "tampered": [],
+              "changed": [
+                "duration.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/parse-duration__openagent__r3.json"
+    },
+    {
+      "task": "slugify",
+      "strategy": "openagent",
+      "repeat": 2,
+      "passed": true,
+      "winner": 0,
+      "repairs": 0,
+      "stop": "passed",
+      "error": "",
+      "already_passing": false,
+      "seconds": 7.96,
+      "stats": {
+        "session_id": "ses_eb439f147ffe01DlywMwPsxIBq",
+        "steps": 7,
+        "tool_calls": 6,
+        "tool_errors": 0,
+        "tools": {
+          "read": 2,
+          "write": 2,
+          "bash": 2
+        },
+        "tokens": {
+          "input": 19309,
+          "output": 263,
+          "reasoning": 0,
+          "cache_read": 0,
+          "cache_write": 0,
+          "total": 19572
+        },
+        "cost": 0.0,
+        "errors": []
+      },
+      "changes": {
+        "added": [],
+        "modified": [
+          "text_utils.py"
+        ],
+        "deleted": []
+      },
+      "attempts": [
+        {
+          "passed": true,
+          "stop": "passed",
+          "seconds": 7.96,
+          "stats": {
+            "session_id": "ses_eb439f147ffe01DlywMwPsxIBq",
+            "steps": 7,
+            "tool_calls": 6,
+            "tool_errors": 0,
+            "tools": {
+              "read": 2,
+              "write": 2,
+              "bash": 2
+            },
+            "tokens": {
+              "input": 19309,
+              "output": 263,
+              "reasoning": 0,
+              "cache_read": 0,
+              "cache_write": 0,
+              "total": 19572
+            },
+            "cost": 0.0,
+            "errors": []
+          },
+          "changes": {
+            "added": [],
+            "modified": [
+              "text_utils.py"
+            ],
+            "deleted": []
+          },
+          "rounds": [
+            {
+              "exit_code": 0,
+              "seconds": 7.87,
+              "stats": {
+                "session_id": "ses_eb439f147ffe01DlywMwPsxIBq",
+                "steps": 7,
+                "tool_calls": 6,
+                "tool_errors": 0,
+                "tools": {
+                  "read": 2,
+                  "write": 2,
+                  "bash": 2
+                },
+                "tokens": {
+                  "input": 19309,
+                  "output": 263,
+                  "reasoning": 0,
+                  "cache_read": 0,
+                  "cache_write": 0,
+                  "total": 19572
+                },
+                "cost": 0.0,
+                "errors": []
+              },
+              "check": {
+                "passed": true,
+                "exit_code": 0,
+                "seconds": 0.09
+              },
+              "tampered": [],
+              "changed": [
+                "text_utils.py"
+              ]
+            }
+          ]
+        }
+      ],
+      "check_passed": true,
+      "graded": null,
+      "trace": "traces/openagent/slugify__openagent__r3.json"
+    }
+  ]
+}

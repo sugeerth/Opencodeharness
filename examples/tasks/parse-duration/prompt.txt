@@ -1,0 +1,2 @@
+Implement parse_duration(text) in duration.py. It takes strings like "1h30m", "45s", "2h" or "1h2m3s"
+and returns the total number of seconds as an int. Raise ValueError for anything else, including "".

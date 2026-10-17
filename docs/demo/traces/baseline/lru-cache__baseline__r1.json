@@ -1,0 +1,197 @@
+{
+ "schema_version": 1,
+ "trace_id": "lru-cache__baseline__r1",
+ "agent": {
+  "name": "baseline",
+  "model": "scripted/coder",
+  "version": "openagent-0.3.0",
+  "system_prompt": "",
+  "config": {
+   "preamble": false,
+   "reveal_check": false,
+   "rounds": 0,
+   "attempts": 1,
+   "check": "python3 -m unittest discover -s tests -q"
+  }
+ },
+ "task": {
+  "id": "lru-cache",
+  "prompt": "Implement the LRUCache class in lru.py: LRUCache(capacity) with get(key) returning the value or None,\nand put(key, value). get and put both mark a key as most recently used; inserting beyond capacity\nevicts the least recently used key. Both operations must be O(1).",
+  "expected": null
+ },
+ "outcome": {
+  "success": false,
+  "answer": "check passed after 0 repair(s); held-out grade failed",
+  "score": 0.0,
+  "termination": "agent_stop"
+ },
+ "totals": {
+  "input_tokens": 7558,
+  "output_tokens": 203,
+  "cost_usd": 0.0,
+  "latency_s": 6.069
+ },
+ "harness": {
+  "adapter": "openagent 0.3.0",
+  "graded_by": "grade",
+  "stop": "passed",
+  "repairs": 0,
+  "changes": {
+   "added": [],
+   "modified": [
+    "lru.py"
+   ],
+   "deleted": []
+  },
+  "grade_output": "----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n======================================================================\nFAIL: test_operations_are_constant_time (test_lru_hidden.HiddenLRUTest.test_operations_are_constant_time)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/tmp/openagent-lru-cache-60yo6jw1/ws/test_lru_hidden.py\", line 14, in test_operations_are_constant_time\n    self.assertLess(time.perf_counter() - start, 1.0, \"40k operations should take well under a second\")\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 9.114109612999982 not less than 1.0 : 40k operations should take well under a second\n\n----------------------------------------------------------------------\nRan 1 test in 9.116s\n\nFAILED (failures=1)",
+  "note": "SYNTHETIC: OpenCode ran for real, with its own tools and sessions, but the model was a scripted playbook (openagent.sim), not an LLM. These numbers show the workflow, not how well any model or strategy does: the playbooks decide that."
+ },
+ "tools": [
+  {
+   "name": "apply_patch",
+   "effect": "write"
+  },
+  {
+   "name": "bash",
+   "effect": null
+  },
+  {
+   "name": "codesearch",
+   "effect": "read"
+  },
+  {
+   "name": "edit",
+   "effect": "write"
+  },
+  {
+   "name": "glob",
+   "effect": "read"
+  },
+  {
+   "name": "grep",
+   "effect": "read"
+  },
+  {
+   "name": "list",
+   "effect": "read"
+  },
+  {
+   "name": "multiedit",
+   "effect": "write"
+  },
+  {
+   "name": "openagent.check",
+   "effect": "read"
+  },
+  {
+   "name": "openagent.guard",
+   "effect": "write"
+  },
+  {
+   "name": "patch",
+   "effect": "write"
+  },
+  {
+   "name": "question",
+   "effect": null
+  },
+  {
+   "name": "read",
+   "effect": "read"
+  },
+  {
+   "name": "skill",
+   "effect": "read"
+  },
+  {
+   "name": "task",
+   "effect": null
+  },
+  {
+   "name": "todoread",
+   "effect": "read"
+  },
+  {
+   "name": "todowrite",
+   "effect": "write"
+  },
+  {
+   "name": "webfetch",
+   "effect": "read"
+  },
+  {
+   "name": "websearch",
+   "effect": "read"
+  },
+  {
+   "name": "write",
+   "effect": "write"
+  }
+ ],
+ "steps": [
+  {
+   "type": "tool_call",
+   "name": "read",
+   "input": "{\"filePath\": \"/tmp/openagent-lru-cache-60yo6jw1/ws/lru.py\"}",
+   "output": "<path>/tmp/openagent-lru-cache-60yo6jw1/ws/lru.py</path>\n<type>file</type>\n<content>\n1: class LRUCache:\n2:     def __init__(self, capacity: int):\n3:         raise NotImplementedError\n4: \n5:     def get(self, key):\n6:         raise NotImplementedError\n7: \n8:     def put(self, key, value):\n9:         raise NotImplementedError\n\n(End of file - total 9 lines)\n</content>",
+   "error": false,
+   "effect": "read",
+   "tokens": 2477,
+   "latency_s": 0.106,
+   "started_s": 0.0,
+   "input_tokens": 2456,
+   "output_tokens": 21,
+   "cached_tokens": 0,
+   "index": 0
+  },
+  {
+   "type": "tool_call",
+   "name": "write",
+   "input": "{\"content\": \"class LRUCache:\\n    def __init__(self, capacity: int):\\n        self.capacity = capacity\\n        self.data = {}\\n        self.order = []\\n\\n    def _touch(self, key):\\n        if key in self.order:\\n            self.order.remove(key)\\n        self.order.append(key)\\n\\n    def get(self, key):\\n        if key not in self.data:\\n            return None\\n        self._touch(key)\\n        return self.data[key]\\n\\n    def put(self, key, value):\\n        self.data[key] = value\\n        self._touch(key)\\n        if len(self.order) > self.capacity:\\n            del self.data[self.order.pop(0)]\\n\", \"filePath\": \"/tmp/openagent-lru-cache-60yo6jw1/ws/lru.py\"}",
+   "output": "Wrote file successfully.",
+   "error": false,
+   "effect": "write",
+   "tokens": 2722,
+   "latency_s": 0.099,
+   "started_s": 0.254,
+   "input_tokens": 2548,
+   "output_tokens": 174,
+   "cached_tokens": 0,
+   "index": 1
+  },
+  {
+   "type": "reason",
+   "name": "text",
+   "input": "",
+   "output": "Implemented LRUCache.",
+   "tokens": 2562,
+   "latency_s": 0.001,
+   "started_s": 0.49,
+   "input_tokens": 2554,
+   "output_tokens": 8,
+   "cached_tokens": 0,
+   "index": 2
+  },
+  {
+   "type": "tool_call",
+   "name": "openagent.check",
+   "input": "python3 -m unittest discover -s tests -q",
+   "output": "exit 0\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK",
+   "tokens": 0,
+   "latency_s": 0.071,
+   "error": false,
+   "effect": "read",
+   "note": "check passed",
+   "index": 3
+  },
+  {
+   "type": "answer",
+   "name": "answer",
+   "input": "",
+   "output": "Implemented LRUCache.",
+   "tokens": 0,
+   "latency_s": 0.0,
+   "index": 4
+  }
+ ]
+}

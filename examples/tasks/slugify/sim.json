@@ -1,0 +1,6 @@
+{"first": [{"read": "text_utils.py"}, {"write": "text_utils.py", "from": "sim/naive.py"},
+           {"say": "Implemented slugify with a regex."}],
+ "verify": [{"bash": "python3 -m unittest discover -s tests -q"}, {"read": "text_utils.py"}, {"write": "text_utils.py", "from": "sim/full.py"},
+            {"bash": "python3 -m unittest discover -s tests -q"}, {"say": "Implemented slugify; accents are transliterated with NFKD. Tests pass."}],
+ "repair": [[{"read": "text_utils.py"}, {"write": "text_utils.py", "from": "sim/full.py"},
+             {"say": "Accented letters are now transliterated."}]]}

@@ -4,8 +4,15 @@ A task is a directory containing:
   prompt.txt   the instruction for the agent (required)
   files/       the starting workspace (optional)
   check.sh     run in the workspace afterwards; exit 0 = pass (optional)
-  task.json    optional settings: {"check": "<shell command>", "protect": ["tests/**"],
-               "setup": "<shell command>", "timeout": 900}
+  task.json    optional settings:
+                 "check":   shell command the agent is told about and repaired against
+                 "grade":   held-out shell command, run once at the end; the agent never sees it,
+                            and when present its verdict is the one that counts
+                 "protect": globs the agent may not change, e.g. ["tests/**"]
+                 "setup":   shell command run in the fresh workspace before the agent starts
+                 "timeout": seconds per OpenCode run
+In any command, {task} is replaced by the task directory's absolute path, so held-out files can
+live beside files/ where the agent can't see them.
 """
 import json
 import shlex
@@ -22,18 +29,25 @@ class Task:
     protect: list[str] = field(default_factory=list)
     setup: str | None = None
     timeout: int | None = None
+    grade: str | None = None
 
     @classmethod
     def load(cls, d: str | Path) -> "Task":
         d = Path(d).resolve()
         cfg = json.loads((d / "task.json").read_text()) if (d / "task.json").is_file() else {}
-        check = cfg.get("check")
+        here = shlex.quote(str(d))
+
+        def cmd(key: str) -> str | None:
+            v = cfg.get(key)
+            return v.replace("{task}", here) if isinstance(v, str) else None
+
+        check = cmd("check")
         if check is None and (d / "check.sh").is_file():
             check = f"bash {shlex.quote(str(d / 'check.sh'))}"
         return cls(name=d.name, prompt=(d / "prompt.txt").read_text().strip(),
                    files=d / "files" if (d / "files").is_dir() else None,
                    check=check, protect=list(cfg.get("protect", [])),
-                   setup=cfg.get("setup"), timeout=cfg.get("timeout"))
+                   setup=cmd("setup"), timeout=cfg.get("timeout"), grade=cmd("grade"))
 
 
 def discover(root: str | Path) -> list[Task]:

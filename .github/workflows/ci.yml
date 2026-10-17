@@ -12,4 +12,24 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: pip install -e '.[dev]'
+      - run: pytest -q -k "not real_opencode"
+
+  end-to-end:
+    # The real OpenCode against the scripted model, with AgentDiff validating the traces.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm i -g opencode-ai@1.19.3
+      - run: pip install -e '.[dev]' git+https://github.com/sugeerth/Agenttracing
       - run: pytest -q
+      - run: openagent demo --agentdiff -j 3 -o demo-results
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-results
+          path: demo-results

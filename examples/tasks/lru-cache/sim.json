@@ -1,0 +1,3 @@
+{"first": [{"read": "lru.py"}, {"write": "lru.py", "from": "sim/list_lru.py"}, {"say": "Implemented LRUCache."}],
+ "verify": [{"bash": "python3 -m unittest discover -s tests -q"}, {"say": "Implemented LRUCache; the tests pass."}],
+ "repair": [[{"read": "lru.py"}, {"say": "The implementation looks correct to me."}]]}

@@ -1,0 +1,7 @@
+{"first": [{"read": "tests/test_stats.py"}, {"read": "stats.py"},
+           {"write": "stats.py", "from": "sim/partial.py"},
+           {"say": "Fixed average(): it used integer division."}],
+ "verify": [{"bash": "python3 -m unittest discover -s tests -q"}, {"read": "stats.py"}, {"write": "stats.py", "from": "sim/median.py"},
+            {"say": "Fixed average() and median() for even-length lists."}],
+ "repair": [[{"read": "stats.py"}, {"write": "stats.py", "from": "sim/full.py"},
+             {"say": "average([]) now returns None, as the test expects."}]]}

@@ -1,0 +1,1 @@
+{"check": "grep -qx hi hello.txt"}

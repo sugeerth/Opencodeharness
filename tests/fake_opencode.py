@@ -21,7 +21,7 @@ session = args[args.index("--session") + 1] if "--session" in args else None
 cwd = Path.cwd()
 if os.environ.get("FAKE_LOG"):
     with open(os.environ["FAKE_LOG"], "a") as f:
-        f.write(json.dumps({"argv": args, "cwd": str(cwd)}) + "\n")
+        f.write(json.dumps({"argv": args, "cwd": str(cwd), "pwd": os.environ.get("PWD")}) + "\n")
 
 sid = session or f"ses_{uuid.uuid4().hex[:8]}"
 
