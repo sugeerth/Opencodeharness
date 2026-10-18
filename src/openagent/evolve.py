@@ -5,7 +5,7 @@ Each generation:
   1. Read the current harness's runs for signals: runs that passed the visible check but failed the
      held-out grade, runs that stalled, ran out of rounds, or edited protected files.
   2. Let the strongest signal name one change from a small library (an instruction added to the
-     prompt, or a knob such as more repair rounds). No model proposes changes; every proposal is a
+     prompt, or a knob such as more repair rounds or the failing output up front). No model proposes changes; every proposal is a
      rule over counts, and the ledger says which signal and which tasks proposed it.
   3. Run the candidate on every task and compare it with the current harness task by task. Keep it
      only if it wins more tasks than it loses and loses none (AgentDiff's rule for a harness change).
@@ -37,7 +37,8 @@ class Candidate:
     signal: str                   # the signal that proposes it
     why: str                      # what the signal means, for the ledger
     instruction: str = ""         # added to the prompt's rules, or
-    rounds: int = 0               # added to the repair rounds
+    rounds: int = 0               # added to the repair rounds, or
+    show_failure: bool = False    # the failing check output goes in the first prompt
 
 
 LIBRARY = [
@@ -64,6 +65,9 @@ LIBRARY = [
               "runs ended with the check still failing",
               instruction="Read the tests for the code you change before editing it, and run them yourself before you "
                           "finish."),
+    Candidate("show_failure", "check_failed",
+              "runs ended with the check still failing: start the agent from the failure instead of letting it search",
+              show_failure=True),
     Candidate("more_rounds", "rounds_exhausted",
               "runs used every repair round and were still failing", rounds=2),
 ]
@@ -96,13 +100,14 @@ def propose(sigs: dict[str, list[str]], tried: set[str], strategy: Strategy) -> 
     """Untried candidates whose signal fired, strongest signal first (more tasks), library order on ties."""
     order = {c.id: i for i, c in enumerate(LIBRARY)}
     picks = [(c, sigs[c.signal]) for c in LIBRARY
-             if c.signal in sigs and c.id not in tried and c.instruction not in strategy.instructions]
+             if c.signal in sigs and c.id not in tried and c.instruction not in strategy.instructions
+             and not (c.show_failure and strategy.show_failure)]
     return sorted(picks, key=lambda p: (-len(p[1]), order[p[0].id]))
 
 
 def apply(strategy: Strategy, c: Candidate, name: str) -> Strategy:
     return replace(strategy, name=name, instructions=strategy.instructions + ((c.instruction,) if c.instruction else ()),
-                   rounds=strategy.rounds + c.rounds)
+                   rounds=strategy.rounds + c.rounds, show_failure=strategy.show_failure or c.show_failure)
 
 
 def rates(results: list[dict]) -> dict[str, float]:
@@ -163,7 +168,7 @@ def evolve(tasks: list[Task], base: Strategy, oc: OpenCode, out_dir: str | Path,
         cmp = compare(cur_rates, rates(cand_results))
         entry = {"generation": g, "candidate": cand_spec.id, "name": name, "signal": cand_spec.signal,
                  "proposed_by": fired_on, "why": cand_spec.why, "instruction": cand_spec.instruction,
-                 "rounds_added": cand_spec.rounds, "current": current.name,
+                 "rounds_added": cand_spec.rounds, "show_failure": cand_spec.show_failure, "current": current.name,
                  "rates": {"current": cur_rates, "candidate": rates(cand_results)}, **cmp}
         # carry the current harness's traces beside the candidate's, so AgentDiff can pair them
         shutil.copytree(cur_dir, gen_dir / "traces" / safe_name(current.name), dirs_exist_ok=True)
@@ -235,6 +240,7 @@ def markdown(ledger: dict) -> str:
         lines += [f"### Generation {e['generation']}: `{e['candidate']}`, {e['verdict']}", "",
                   f"- Proposed by **{e['signal']}** on {', '.join(e['proposed_by'])}: {e['why']}.",
                   f"- Change: " + (f"add the instruction “{e['instruction']}”" if e["instruction"]
+                                   else "show the failing check output in the first prompt" if e.get("show_failure")
                                    else f"add {e['rounds_added']} repair round(s)"),
                   f"- Against {e['current']}: won {', '.join(e['wins']) or 'nothing'}; "
                   f"lost {', '.join(e['losses']) or 'nothing'}; {len(e['ties'])} tie(s)"

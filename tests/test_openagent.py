@@ -498,7 +498,7 @@ def test_propose_orders_by_signal_strength_and_skips_tried():
     from openagent.evolve import propose
     sigs = {"stalled": ["x"], "check_failed": ["x", "y"], "held_out_fail": ["z"]}
     ids = [c.id for c, _ in propose(sigs, set(), PRESETS["openagent"])]
-    assert ids == ["read_tests_first", "edge_cases", "write_tests", "reread_failure"]
+    assert ids == ["read_tests_first", "show_failure", "edge_cases", "write_tests", "reread_failure"]
     assert "read_tests_first" not in [c.id for c, _ in propose(sigs, {"read_tests_first"}, PRESETS["openagent"])]
 
 
@@ -1140,3 +1140,28 @@ def test_doctor(tmp_path, monkeypatch):
     assert c.status == "ok" and "ANTHROPIC_API_KEY" in c.detail and "secret" not in c.detail
     text = doctor.render([c, bad])
     assert "✗ model" in text and "→ try one of" in text and text.endswith("1 problem(s), 0 warning(s)")
+
+
+def test_show_failure_puts_the_failing_output_in_the_first_prompt(fake, tmp_path):
+    from openagent.agent import Strategy as S
+    d = ws(tmp_path)
+    (d / "hello.txt").write_text("bye\n")
+    out = solve("t", d, CHECK + " || (echo 'AssertionError: expected hi' && false)", fake("good"),
+                S(show_failure=True))
+    assert out.passed
+    first = fake.calls()[0]["argv"][-1]
+    assert "Right now it fails (exit 1)" in first and "AssertionError: expected hi" in first
+    # off by default, and round-trips through a harness file
+    assert "Right now it fails" not in first_prompt("t", CHECK, PRESETS["openagent"])
+    assert S.from_dict(S(show_failure=True).to_dict()).show_failure
+
+
+def test_evolve_proposes_show_failure_once():
+    from openagent.evolve import apply, propose, LIBRARY
+    sigs = {"check_failed": ["a", "b"]}
+    ids = [c.id for c, _ in propose(sigs, set(), PRESETS["openagent"])]
+    assert "show_failure" in ids
+    c = next(c for c in LIBRARY if c.id == "show_failure")
+    s = apply(PRESETS["openagent"], c, "v1")
+    assert s.show_failure and s.instructions == PRESETS["openagent"].instructions
+    assert "show_failure" not in [c.id for c, _ in propose(sigs, set(), s)]

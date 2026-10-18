@@ -35,7 +35,7 @@ jobs:
       - run: pip install -e . pytest
 
       - id: agent
-        uses: sugeerth/opencodeharness@v0.8.0
+        uses: sugeerth/opencodeharness@main   # or pin a commit: @<sha>
         with:
           task: |
             ${{ github.event.issue.title }}

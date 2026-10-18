@@ -285,7 +285,7 @@ The same loop, wherever the task comes from:
 
 ```
  openagent run "..." -c CHECK            a terminal
- uses: sugeerth/opencodeharness@v0.8.0   an issue labelled `openagent` ─► draft PR with the summary
+ uses: sugeerth/opencodeharness@main     an issue labelled `openagent` ─► draft PR with the summary
  openagent mcp                           Claude Code, Cursor, any MCP client ─► tools solve / check
 ```
 

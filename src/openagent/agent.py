@@ -33,6 +33,11 @@ PREAMBLE = """You are working autonomously in this repository. No human will ans
 
 CHECK_HINT = "Your work will be verified by running `{check}` in the repository root. It must exit 0."
 
+FAILING_NOW = """Right now it fails (exit {code}). The relevant output:
+```
+{output}
+```"""
+
 REPAIR = """Verification failed (repair {n} of {total}). `{check}` exited {code}. The relevant output:
 ```
 {output}
@@ -57,14 +62,16 @@ class Strategy:
     rounds: int = 3              # repair rounds after the first try
     attempts: int = 1            # independent parallel attempts (best-of-N)
     instructions: tuple[str, ...] = ()   # extra rules, e.g. ones `openagent evolve` kept
+    show_failure: bool = False   # put the check's failing output (from preflight) in the first prompt
 
     def to_dict(self) -> dict:
         return {"name": self.name, "preamble": self.preamble, "reveal_check": self.reveal_check,
-                "rounds": self.rounds, "attempts": self.attempts, "instructions": list(self.instructions)}
+                "rounds": self.rounds, "attempts": self.attempts, "instructions": list(self.instructions),
+                "show_failure": self.show_failure}
 
     @classmethod
     def from_dict(cls, d: dict) -> "Strategy":
-        known = {k: d[k] for k in ("name", "preamble", "reveal_check", "rounds", "attempts") if k in d}
+        known = {k: d[k] for k in ("name", "preamble", "reveal_check", "rounds", "attempts", "show_failure") if k in d}
         return cls(**known, instructions=tuple(d.get("instructions", ())))
 
     @classmethod
@@ -186,7 +193,7 @@ class Outcome:
 Log = Callable[[str], None]
 
 
-def first_prompt(task: str, check: str | None, strategy: Strategy) -> str:
+def first_prompt(task: str, check: str | None, strategy: Strategy, failing: CheckResult | None = None) -> str:
     parts = []
     rules = "".join(f"\n- {i}" for i in strategy.instructions)
     if strategy.preamble:
@@ -194,7 +201,10 @@ def first_prompt(task: str, check: str | None, strategy: Strategy) -> str:
     elif rules:
         parts.append("Rules:" + rules)
     if check and strategy.reveal_check:
-        parts.append(CHECK_HINT.format(check=check))
+        hint = CHECK_HINT.format(check=check)
+        if strategy.show_failure and failing is not None and not failing.passed:
+            hint += " " + FAILING_NOW.format(code=failing.exit_code, output=excerpt(failing.output))
+        parts.append(hint)
     parts.append(("Task:\n" if parts else "") + task)
     return "\n\n".join(parts)
 
@@ -216,12 +226,12 @@ def repair_prompt(task: str, check: str, result: CheckResult, n: int, total: int
 
 def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strategy: Strategy,
             protect: list[str] = (), check_timeout: int = 600, log: Log = lambda _: None,
-            max_cost: float | None = None) -> Attempt:
+            max_cost: float | None = None, failing: CheckResult | None = None) -> Attempt:
     guard = Guard(workspace, list(protect)) if protect else None
     result = Attempt(passed=False, workspace=workspace)
     start = last = fingerprint(workspace)
     touched: set[str] = set()   # files the agent changed in some round (never ones only the check wrote)
-    prompt, session, idle = first_prompt(task, check, strategy), None, 0
+    prompt, session, idle = first_prompt(task, check, strategy, failing), None, 0
 
     def agent_changes() -> dict[str, list[str]]:
         return {k: [p for p in v if p in touched] for k, v in changes(start, last).items()}
@@ -312,7 +322,7 @@ def solve(task: str, workdir: str | Path, check: str | None = None, oc: OpenCode
 
     budget = max_cost / strategy.attempts if max_cost is not None and strategy.attempts > 1 else max_cost
     if strategy.attempts <= 1:
-        a = attempt(task, workdir, check, oc, strategy, protect, check_timeout, log, budget)
+        a = attempt(task, workdir, check, oc, strategy, protect, check_timeout, log, budget, pre)
         return Outcome(strategy, a.passed, 0 if a.passed else None, [a], pre)
 
     with tempfile.TemporaryDirectory(prefix="openagent-") as tmp:
@@ -324,7 +334,7 @@ def solve(task: str, workdir: str | Path, check: str | None = None, oc: OpenCode
 
         def one(i: int) -> Attempt:
             return attempt(task, copies[i], check, oc, strategy, protect, check_timeout,
-                           lambda m, i=i: log(f"[{i + 1}/{strategy.attempts}] {m}"), budget)
+                           lambda m, i=i: log(f"[{i + 1}/{strategy.attempts}] {m}"), budget, pre)
 
         with ThreadPoolExecutor(max_workers=strategy.attempts) as pool:
             attempts = list(pool.map(one, range(strategy.attempts)))

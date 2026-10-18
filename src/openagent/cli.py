@@ -53,6 +53,8 @@ def _strategy_args(p: argparse.ArgumentParser) -> None:
     g.add_argument("--attempts", type=int, help="parallel attempts; the passing one with fewest rounds wins")
     g.add_argument("--no-preamble", action="store_true", help="send the task without autonomy guidance")
     g.add_argument("--hide-check", action="store_true", help="don't tell the agent the check command")
+    g.add_argument("--show-failure", action="store_true",
+                   help="put the check's failing output from before the change in the first prompt")
     g.add_argument("--harness", metavar="FILE",
                    help="a harness file, e.g. the harness.json `openagent evolve` writes "
                         "(run: use it; bench/demo: add it to the strategies compared)")
@@ -73,7 +75,8 @@ def _make_oc(a, env=None) -> OpenCode:
 def _override(strategy, a):
     return with_overrides(strategy, rounds=a.rounds, attempts=a.attempts,
                           preamble=False if a.no_preamble else None,
-                          reveal_check=False if a.hide_check else None)
+                          reveal_check=False if a.hide_check else None,
+                          show_failure=True if getattr(a, "show_failure", False) else None)
 
 
 def cmd_run(a) -> int:

@@ -30,7 +30,11 @@ openagent ui      # all of it in a local web front end
 ```bash
 pip install git+https://github.com/sugeerth/Opencodeharness
 npm i -g opencode-ai           # OpenCode itself; then `opencode auth login` for your provider
+openagent doctor -m anthropic/claude-sonnet-5-5 --ping   # is everything ready? (--ping: one real one-line run)
 ```
+
+`doctor` checks Python, OpenCode and its version, your credentials (names only, never values), that OpenCode
+lists the model, git, the Docker sandbox and AgentDiff, and prints the command that fixes each problem.
 
 ## Use it on your repo
 
@@ -54,6 +58,7 @@ The exit code is 0 only if the check passes. Progress goes to stderr, and the ag
 | `-m, --model`, `--agent` | Passed to OpenCode (`provider/model`). |
 | `--oc-arg ARG` | Any extra `opencode run` flag, e.g. `--oc-arg=--attach --oc-arg=http://localhost:4096` to skip cold starts. |
 | `--no-preamble`, `--hide-check` | Turn off the guidance or the check hint. |
+| `--show-failure` | Put the check's failing output from before the change in the first prompt, so the agent starts from the failure. Also a candidate `openagent evolve` can propose (signal: runs ending with the check failing). |
 | `--summary FILE` | Write a Markdown summary: verdict, rounds, changed files, cost, the failing output. Made for a pull request body or a CI job summary. |
 
 `-m` defaults to `$OPENAGENT_MODEL`.
@@ -69,7 +74,7 @@ check, then a draft pull request comes back with the run's summary as its body (
   with:
     persist-credentials: false        # the agent's shell gets no token that can push
 - id: agent
-  uses: sugeerth/opencodeharness@v0.8.0
+  uses: sugeerth/opencodeharness@main
   with:
     task: |
       ${{ github.event.issue.title }}

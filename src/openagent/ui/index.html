@@ -247,7 +247,7 @@ function viewBench() {
 function viewEvolve() {
   $("#main").innerHTML = `
     <h1>Evolve the harness</h1>
-    <p class="sub">Signals in the runs propose one change at a time: an instruction, or more repair rounds. A change is kept only if it wins more tasks than it loses, loses none, and holds when the tasks it moved are run again. The result is a harness file you can use for new runs.</p>
+    <p class="sub">Signals in the runs propose one change at a time: an instruction, more repair rounds, or the failing output up front. A change is kept only if it wins more tasks than it loses, loses none, and holds when the tasks it moved are run again. The result is a harness file you can use for new runs.</p>
     ${needsOpencode()}
     <div class="card"><div class="grid2">
       ${field("tasks", "Tasks folder", {value: INFO.examples || "", full: true})}
@@ -484,7 +484,7 @@ async function evolutionHTML(j) {
     const tasks = Object.keys(g.rates.current).sort();
     return `<div class="gen"><h3>Generation ${g.generation}: <span class="kbd">${esc(g.candidate)}</span> <span class="pill ${esc(g.verdict)}">${esc(g.verdict)}</span></h3>
       <div class="hint">Proposed by <b>${esc(g.signal)}</b> on ${esc(g.proposed_by.join(", "))}: ${esc(g.why)}.</div>
-      <p style="margin:8px 0">${g.instruction ? `Adds: “${esc(g.instruction)}”` : `Adds ${g.rounds_added} repair round(s).`}</p>
+      <p style="margin:8px 0">${g.instruction ? `Adds: “${esc(g.instruction)}”` : g.show_failure ? `Shows the failing check output in the first prompt.` : `Adds ${g.rounds_added} repair round(s).`}</p>
       <div class="hint">Against ${esc(g.current)}: won ${esc(g.wins.join(", ") || "nothing")}; lost ${esc(g.losses.join(", ") || "nothing")}${g.confirm ? `; re-run of ${esc(g.confirm.tasks.join(", "))}: won ${esc(g.confirm.wins.join(", ") || "nothing")}, lost ${esc(g.confirm.losses.join(", ") || "nothing")}` : ""}. <b>${esc(g.reason)}</b>.</div>
       <div class="row" style="margin-top:8px">${tasks.map(t => { const a = g.rates.current[t], b = g.rates.candidate[t];
         return `<span class="pill kind">${esc(t)} ${pct(a)} → ${pct(b)} ${b > a ? '<span class="up">▲</span>' : b < a ? '<span class="down">▼</span>' : ""}</span>`; }).join("")}</div></div>`; }).join("")
