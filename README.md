@@ -15,6 +15,7 @@ model *thinks* it's done. Open Agent runs the loop a careful engineer would:
 8. **Measure**: benchmark strategies against raw OpenCode, graded by held-out tests the agent never sees, and write every run as an AgentDiff trace for paired inference, pass^k, diagnosis and a scorecard.
 9. **Improve itself**: `openagent evolve` lets signals in the runs propose changes to the harness and keeps one only when it wins more tasks than it loses, loses none, and holds on a re-run.
 10. **Real tasks**: `openagent tasks from-git` turns your repository's history into tasks graded by each commit's own tests.
+11. **Everywhere you work**: a GitHub Action that turns a labelled issue into a draft pull request, and an MCP server so Claude Code, Cursor or any MCP client can hand OpenCode a task and get back a verified result.
 
 The core is Python 3.11+ with no dependencies, it is MIT licensed, and it works with any model OpenCode supports.
 
@@ -53,6 +54,59 @@ The exit code is 0 only if the check passes. Progress goes to stderr, and the ag
 | `-m, --model`, `--agent` | Passed to OpenCode (`provider/model`). |
 | `--oc-arg ARG` | Any extra `opencode run` flag, e.g. `--oc-arg=--attach --oc-arg=http://localhost:4096` to skip cold starts. |
 | `--no-preamble`, `--hide-check` | Turn off the guidance or the check hint. |
+| `--summary FILE` | Write a Markdown summary: verdict, rounds, changed files, cost, the failing output. Made for a pull request body or a CI job summary. |
+
+`-m` defaults to `$OPENAGENT_MODEL`.
+
+## On GitHub: label an issue, get a pull request
+
+The repository is a GitHub Action. [`examples/github/openagent-issue.yml`](examples/github/openagent-issue.yml)
+is a complete workflow: label an issue `openagent`, and OpenCode works on it in CI with your tests as the
+check, then a draft pull request comes back with the run's summary as its body (or a comment saying why nothing changed).
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    persist-credentials: false        # the agent's shell gets no token that can push
+- id: agent
+  uses: sugeerth/opencodeharness@v0.8.0
+  with:
+    task: |
+      ${{ github.event.issue.title }}
+
+      ${{ github.event.issue.body }}
+    check: pytest -q
+    protect: |
+      tests/**
+    model: anthropic/claude-sonnet-5-5
+    max-cost: "2"
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+# outputs: passed, stop, changed, cost, summary (Markdown file), result (JSON), trace (AgentDiff)
+```
+
+Inputs reach the shell only as environment variables, so an issue's text can't inject commands into the
+workflow (a test sends it `$(rm -rf /)` and checks OpenCode received it verbatim). The summary also goes to
+the job's summary page. Inputs: `task` or `task-file`, `check`, `model`, `preset` or `harness`, `rounds`,
+`attempts`, `max-cost`, `protect`, `agent`, `timeout`, `working-directory`, `opencode-version`, `fail-on-failure`.
+CI runs the action itself (`uses: ./`) on an example task against the scripted model on every push.
+
+## As an MCP server: `openagent mcp`
+
+```bash
+claude mcp add openagent -- openagent mcp -m anthropic/claude-sonnet-5-5
+```
+
+Any MCP client can now call:
+
+| Tool | |
+|---|---|
+| `solve` | `task`, `directory`, `check`, `protect`, `preset`, `rounds`, `model`, `max_cost`: OpenCode makes the change and repairs it until the check passes. Returns the Markdown summary, plus the full run record as structured content. |
+| `check` | Run a command in a directory: passed or failed, with the lines that explain a failure. |
+| `presets` | The strategies `solve` can use. |
+
+It is stdio JSON-RPC with only the standard library, and it accepts the `--sandbox docker` and OpenCode flags
+of `openagent run`. Tested against the real OpenCode: a `solve` call over stdio fixed the `fix-average` example in one repair.
 
 ## See the whole workflow, offline: `openagent demo`
 
@@ -77,6 +131,12 @@ served on localhost (`openagent.sim`), so it needs no API key. Six example tasks
 
 The playbooks decide those outcomes, so the demo shows the workflow, not how good any model is. The
 committed run is in [`docs/demo`](docs/demo/), walked through in [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+### Try OpenCode offline: `openagent sim`
+
+`openagent sim examples/tasks` serves the demo's scripted model on its own and prints the environment that
+points OpenCode at it (`--env-file` appends it to a file, e.g. `$GITHUB_ENV`). Then plain `opencode run -m scripted/coder ...`,
+`openagent run`, the action and the MCP server all work with no API key, on the example tasks.
 
 ## The front end: `openagent ui`
 

@@ -53,3 +53,39 @@ jobs:
       - name: Same results as outside the sandbox
         run: |
           python -c "import json, sys; r = {(x['task'], x['strategy']): x['passed'] for x in json.load(open('sandbox-results/results.json'))['results']}; print(r); sys.exit(r != {('hello', 'baseline'): True, ('hello', 'openagent'): True, ('fix-average', 'baseline'): False, ('fix-average', 'openagent'): True})"
+
+  action:
+    # The GitHub Action itself (uses: ./), on an example task, against the scripted model.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Serve the scripted model
+        run: |
+          pip install -e .
+          nohup openagent sim examples/tasks --env-file sim.env > sim.log 2>&1 &
+          for i in $(seq 60); do [ -s sim.env ] && break; sleep 0.5; done
+          cat sim.env >> "$GITHUB_ENV"
+          cp -r examples/tasks/fix-average/files "$RUNNER_TEMP/ws"
+      - id: agent
+        uses: ./
+        with:
+          task-file: ${{ github.workspace }}/examples/tasks/fix-average/prompt.txt
+          check: python3 -m unittest discover -s tests -q
+          protect: |
+            tests/**
+          working-directory: ${{ runner.temp }}/ws
+      - name: The action reports the passing run
+        env:
+          PASSED: ${{ steps.agent.outputs.passed }}
+          CHANGED: ${{ steps.agent.outputs.changed }}
+          SUMMARY: ${{ steps.agent.outputs.summary }}
+        run: |
+          echo "passed=$PASSED changed=$CHANGED"
+          test "$PASSED" = true && test "$CHANGED" = 1
+          grep -q "the check passed" "$SUMMARY"

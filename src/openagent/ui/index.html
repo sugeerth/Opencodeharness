@@ -346,7 +346,7 @@ async function renderJob(j) {
       <div class="tile"><div class="k">Tokens</div><div class="v">${Number(s.tokens || 0).toLocaleString()}</div></div>
       <div class="tile"><div class="k">Cost</div><div class="v">$${Number(s.cost || 0).toFixed(4)}</div></div>
       <div class="tile"><div class="k">Time</div><div class="v">${esc(s.seconds)}s</div></div></div>`;
-    tabs = running ? ["Live log"] : ["Trace", "Diff", "Log"];
+    tabs = running ? ["Live log"] : ["Trace", "Diff", "Summary", "Log"];
   } else if (j.summary && j.summary.evolution) tabs = running ? ["Live log"] : ["Evolution", "Harness", "Log"];
   else tabs = running ? ["Live log"] : ["Results", "Log"];
   if (!jobState.tab || !tabs.includes(jobState.tab)) jobState.tab = tabs[0];
@@ -373,6 +373,12 @@ async function renderPane(j) {
       const c = l.startsWith("+++") || l.startsWith("---") || l.startsWith("@@") ? "hd" : l.startsWith("+") ? "add" : l.startsWith("-") ? "del" : "";
       return c ? `<span class="${c}">${esc(l)}</span>` : esc(l); }).join("\n")}</pre>`
       : `<div class="empty">${j.params.copy === false ? "No diff: the run worked in place and the folder is not a git repository, or nothing changed." : "Nothing changed."}</div>`;
+  } else if (tab === "Summary") {
+    let m = ""; try { m = await api(`/api/jobs/${encodeURIComponent(j.id)}/file?path=summary.md`); } catch (e) {}
+    pane.innerHTML = m ? `<p class="sub">The run as Markdown, ready for a pull request body (the same text <code>openagent run --summary</code> writes).</p>
+      <div class="row" style="margin-bottom:10px"><button class="btn" id="copymd">Copy Markdown</button></div><pre id="md">${esc(m)}</pre>`
+      : `<div class="empty">No summary for this run.</div>`;
+    if ($("#copymd")) $("#copymd").onclick = async () => { try { await navigator.clipboard.writeText(m); $("#copymd").textContent = "Copied"; } catch (e) { $("#copymd").textContent = "Select the text below to copy"; } };
   } else if (tab === "Results") {
     pane.innerHTML = await resultsHTML(j);
     bindCells(j);

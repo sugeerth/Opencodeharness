@@ -18,7 +18,7 @@ openagent demo --evolve 6 --repeat 2 --agentdiff -o docs/evolve
 > model did not: it was a scripted playbook (`openagent.sim`) served on localhost through OpenCode's
 > OpenAI-compatible provider, so the demo needs no API key and gives the same result every time. The
 > playbooks decide the outcomes, so the numbers below show the workflow working, not how good any
-> model or strategy is. For real numbers, run `openagent bench` with your model (step 6).
+> model or strategy is. For real numbers, run `openagent bench` with your model (step 11).
 
 ```
  tasks/            ┌──────────────────────── Open Agent ─────────────────────────┐
@@ -279,7 +279,34 @@ Every step above is also in the local front end. From one page you can:
 
 ![The trace of parse-duration under openagent in the UI](img/ui-trace.png)
 
-## 10. Your turn: real numbers
+## 10. Where it runs: your terminal, GitHub, any MCP client
+
+The same loop, wherever the task comes from:
+
+```
+ openagent run "..." -c CHECK            a terminal
+ uses: sugeerth/opencodeharness@v0.8.0   an issue labelled `openagent` ─► draft PR with the summary
+ openagent mcp                           Claude Code, Cursor, any MCP client ─► tools solve / check
+```
+
+Every one of them ends in the same record: the verdict, each round's tool calls, changed files and check
+result, the cost, and an AgentDiff trace. `--summary` renders it as Markdown, which is the pull request body
+in the GitHub workflow and the `solve` tool's answer over MCP:
+
+```
+## Open Agent: ✅ the check passed
+> The tests in tests/test_stats.py fail. Fix the bugs in stats.py so they pass.
+| Strategy | `openagent` |  | Repairs | 1 |  | Tokens | 31,701 |
+**Changed** (1): `~ stats.py`
+| # | Tool calls | Files changed | Check |
+| 1 | 6          | 1             | fail (exit 1) |
+| 2 | 2          | 1             | pass |
+```
+
+`openagent sim examples/tasks` serves the scripted model by itself, so all three can be tried with no API
+key. CI does exactly that for the action, on every push.
+
+## 11. Your turn: real numbers
 
 ```bash
 opencode auth login                              # your provider

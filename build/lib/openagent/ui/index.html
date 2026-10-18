@@ -207,12 +207,14 @@ function viewNewRun(prefill={}) {
       ${field("max_cost", "Cost budget (USD)", {type: "number", ph: "none"})}
       ${field("timeout", "Seconds per OpenCode run", {type: "number", value: "900"})}
       <div class="field full"><label class="check"><input type="checkbox" id="copy" checked> Work in a copy: your folder is not changed, and the diff is shown here</label></div>
+      <div class="field full"><label class="check"><input type="checkbox" id="sandbox" ${INFO.docker ? "" : "disabled"}> Run in the Docker sandbox: OpenCode and every check run in a container that sees only the workspace ${INFO.docker ? "(build the image once with <span class='kbd'>openagent sandbox build</span>)" : "(Docker is not available)"}</label></div>
     </div>
     <div class="row" style="margin-top:16px"><button class="btn" id="go">Start run</button><span class="hint" id="err"></span></div></div>`;
   $("#go").onclick = async () => {
     const body = {dir: val("dir"), task: val("task"), check: val("check"), protect: val("protect"), preset: val("preset"),
                   harness: val("harness"), model: val("model"), binary: val("binary"), rounds: val("rounds"),
-                  attempts: val("attempts"), max_cost: val("max_cost"), timeout: val("timeout"), copy: val("copy")};
+                  attempts: val("attempts"), max_cost: val("max_cost"), timeout: val("timeout"), copy: val("copy"),
+                  sandbox: val("sandbox") ? "docker" : ""};
     if (!body.copy && !confirm("The agent will edit files in " + body.dir + " directly. Continue?")) return;
     submit("/api/run", body);
   };
@@ -224,7 +226,8 @@ function viewBench() {
     <p class="sub">Run strategies against a folder of tasks and compare each with plain OpenCode, task by task, graded by held-out tests where a task has them. Every run is written as an AgentDiff trace.</p>
     ${needsOpencode()}
     <div class="card"><div class="grid2">
-      ${field("tasks", "Tasks folder", {value: INFO.examples || "", full: true, hint: "One folder per task: prompt.txt, files/, task.json. Make some from git history with <span class='kbd'>openagent tasks from-git</span>."})}
+      ${field("tasks", "Tasks folder or manifest", {value: INFO.examples || "", full: true, hint: "One folder per task (prompt.txt, files/, task.json), or a manifest .json whose tasks are fetched from GitHub on first use. Make your own with <span class='kbd'>openagent tasks from-git</span>."})}
+      ${INFO.realworld ? `<div class="field full"><div class="row"><span class="hint">Real-world benchmarks:</span><button class="btn ghost small" id="rw" type="button">Python: 71 tasks from 7 libraries</button>${INFO.realworld_go ? `<button class="btn ghost small" id="rwgo" type="button">Go: 84 tasks from 8 libraries</button>` : ""}<span class="hint">needs <span class="kbd">pip install pytest freezegun hypothesis</span> and a model</span></div></div>` : ""}
       ${field("only", "Only these tasks", {ph: "comma-separated names; blank for all"})}
       ${field("harness", "Also compare a harness file", {ph: "path/to/harness.json"})}
       <div class="field full"><label>Strategies</label><div class="row">${(INFO.presets || []).map(p => `<label class="check"><input type="checkbox" class="preset" value="${esc(p)}" ${["baseline","openagent"].includes(p) ? "checked" : ""}> ${esc(p)}</label>`).join("")}</div></div>
@@ -232,10 +235,13 @@ function viewBench() {
       ${field("repeat", "Runs per task", {type: "number", value: "1"})}
       ${field("jobs", "In parallel", {type: "number", value: "2"})}
       <div class="field full"><label class="check"><input type="checkbox" id="agentdiff" ${INFO.agentdiff ? "checked" : "disabled"}> Evaluate with AgentDiff ${INFO.agentdiff ? "" : "(not installed)"}</label></div>
+      <div class="field full"><label class="check"><input type="checkbox" id="sandbox" ${INFO.docker ? "" : "disabled"}> Run in the Docker sandbox: OpenCode and every check run in a container that sees only the workspace ${INFO.docker ? "(build the image once with <span class='kbd'>openagent sandbox build</span>)" : "(Docker is not available)"}</label></div>
     </div><div class="row" style="margin-top:16px"><button class="btn" id="go">Start benchmark</button><span class="hint" id="err"></span></div></div>`;
+  if ($("#rw")) $("#rw").onclick = () => { document.getElementById("tasks").value = INFO.realworld; };
+  if ($("#rwgo")) $("#rwgo").onclick = () => { document.getElementById("tasks").value = INFO.realworld_go; };
   $("#go").onclick = () => submit("/api/bench", {tasks: val("tasks"), only: val("only"), harness: val("harness") || undefined,
     presets: [...document.querySelectorAll(".preset:checked")].map(x => x.value), model: val("model"), binary: val("binary"),
-    repeat: val("repeat"), jobs: val("jobs"), agentdiff: val("agentdiff")});
+    repeat: val("repeat"), jobs: val("jobs"), agentdiff: val("agentdiff"), sandbox: val("sandbox") ? "docker" : ""});
 }
 
 function viewEvolve() {

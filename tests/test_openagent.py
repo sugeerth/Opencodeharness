@@ -988,3 +988,155 @@ def test_sandbox_grades_with_the_held_out_tests_without_showing_them_to_the_agen
     grade_dir = str(tmp_path / "tasks" / task.name / "grade")
     agent_cmd = Docker().wrap(["opencode", "run", f"look in {grade_dir}"], w)
     assert not any(grade_dir in a and a.endswith(":ro") for a in agent_cmd)
+
+
+# --- summary, sim, GitHub Action ----------------------------------------------------------
+
+def test_summary_markdown(fake, tmp_path):
+    from openagent.summary import markdown
+    out = solve("make hello say hi", ws(tmp_path), CHECK, fake("repair"), PRESETS["openagent"])
+    md = markdown(out, "make hello say hi", CHECK)
+    assert md.startswith("## Open Agent: ✅ the check passed")
+    assert "> make hello say hi" in md and "| Repairs | 1 |" in md
+    assert "| 1 |" in md and "fail (exit 1)" in md and "| 2 |" in md and "pass |" in md
+    failed = solve("t", ws(tmp_path, "w2"), CHECK, fake("never"), Strategy(rounds=1))
+    md = markdown(failed, "t", CHECK)
+    assert "❌ the check did not pass" in md and "Last check output" in md and "the repair rounds ran out" in md
+
+
+def test_run_writes_summary(fake, tmp_path):
+    exe = fake("repair").binary
+    d = ws(tmp_path)
+    assert main(["run", "say hi", "-C", str(d), "-c", CHECK, "--binary", exe,
+                 "--summary", str(tmp_path / "s.md")]) == 0
+    assert "the check passed" in (tmp_path / "s.md").read_text()
+
+
+def test_action_outputs(tmp_path):
+    from openagent.action_outputs import outputs
+    r = tmp_path / "r.json"
+    r.write_text(json.dumps({"passed": True, "stop": "passed", "stats": {"cost": 0.25},
+                             "changes": {"added": ["a"], "modified": ["b", "c"], "deleted": []}}))
+    assert outputs(str(r)) == {"passed": "true", "stop": "passed", "changed": "3", "cost": "0.2500"}
+    assert outputs(str(tmp_path / "missing.json")) == {"passed": "false", "stop": "error", "changed": "0",
+                                                        "cost": "0.0000"}
+
+
+def test_model_defaults_to_env(fake, tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENAGENT_MODEL", "prov/m")
+    exe = fake("good").binary
+    assert main(["run", "say hi", "-C", str(ws(tmp_path)), "-c", CHECK, "--binary", exe]) == 0
+    argv = fake.calls()[0]["argv"]
+    assert argv[argv.index("--model") + 1] == "prov/m"
+
+
+def test_sim_command_serves_and_writes_env(tmp_path):
+    import subprocess
+    import time
+    import urllib.request
+    env_file = tmp_path / "sim.env"
+    p = subprocess.Popen([sys.executable, "-m", "openagent.cli", "sim", str(EXAMPLES), "--env-file", str(env_file),
+                          "--config-dir", str(tmp_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        for _ in range(100):
+            if env_file.exists() and env_file.read_text():
+                break
+            time.sleep(0.1)
+        env = dict(l.split("=", 1) for l in env_file.read_text().splitlines())
+        assert env["OPENAGENT_MODEL"] == "scripted/coder"
+        config = json.loads(Path(env["OPENCODE_CONFIG"]).read_text())
+        base = config["provider"]["scripted"]["options"]["baseURL"]
+        with urllib.request.urlopen(base + "/models", timeout=5) as r:
+            assert r.status == 200
+    finally:
+        p.terminate()
+        assert p.wait(timeout=10) == 0
+
+
+def test_github_action_runs_end_to_end(fake, tmp_path):
+    """The composite action's own scripts, run the way a runner runs them, with the fake OpenCode."""
+    yaml = pytest.importorskip("yaml")
+    import re
+    import subprocess
+    root = Path(__file__).parents[1]
+    spec = yaml.safe_load((root / "action.yml").read_text())
+    exe = Path(fake("repair").binary)
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    # the action calls `opencode` and `openagent` from PATH
+    (bindir / "opencode").symlink_to(exe)
+    (bindir / "openagent").write_text(f"#!/bin/sh\nexec {sys.executable} -m openagent.cli \"$@\"\n")
+    (bindir / "openagent").chmod(0o755)
+    work = ws(tmp_path)
+    inputs = {k: str(v.get("default", "")) for k, v in spec["inputs"].items()}
+    inputs.update({"task": "say hi; it's \"quoted\" $(rm -rf /) `x`", "check": CHECK, "protect": "a/**\nb/**"})
+    files = {n: tmp_path / n for n in ("output", "path", "summary")}
+    for f in files.values():
+        f.write_text("")
+    env = dict(os.environ, RUNNER_TEMP=str(tmp_path), GITHUB_ACTION_PATH=str(root), GITHUB_RUN_ID="7",
+               GITHUB_RUN_ATTEMPT="1", GITHUB_OUTPUT=str(files["output"]), GITHUB_PATH=str(files["path"]),
+               GITHUB_STEP_SUMMARY=str(files["summary"]), PATH=f"{bindir}:{os.environ['PATH']}",
+               PYTHONPATH=str(root / "src"))
+    run = next(s for s in spec["runs"]["steps"] if s.get("id") == "run")
+    sub = lambda s: re.sub(r"\$\{\{\s*inputs\.([\w-]+)\s*\}\}", lambda m: inputs[m.group(1)], str(s))
+    step_env = dict(env, **{k: sub(v) for k, v in run["env"].items()})
+    p = subprocess.run(["bash", "-e", "-c", run["run"]], cwd=work, env=step_env, capture_output=True, text=True)
+    assert p.returncode == 0, p.stderr
+    out = dict(l.split("=", 1) for l in files["output"].read_text().splitlines())
+    assert out["passed"] == "true" and out["stop"] == "passed" and out["changed"] == "1"
+    assert "the check passed" in files["summary"].read_text()
+    argv = fake.calls()[0]["argv"]
+    # the task reached OpenCode verbatim, never through the shell
+    assert "$(rm -rf /)" in argv[-1] and '"quoted"' in argv[-1]
+    assert Path(out["result"]).is_file() and list(Path(out["trace"]).glob("*.json"))
+
+
+def test_mcp_server_solves_over_stdio(fake, tmp_path):
+    import io
+    from openagent.mcp import serve
+    d = ws(tmp_path)
+    msgs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+            {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+             "params": {"name": "solve", "arguments": {"task": "say hi", "directory": str(d), "check": CHECK}}},
+            {"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+             "params": {"name": "check", "arguments": {"command": "exit 3", "directory": str(d)}}},
+            {"jsonrpc": "2.0", "id": 5, "method": "nope"}]
+    out = io.StringIO()
+    serve(fake("repair"), io.StringIO("\n".join(json.dumps(m) for m in msgs) + "\nnot json\n"), out)
+    replies = [json.loads(l) for l in out.getvalue().splitlines()]
+    assert [r.get("id") for r in replies] == [1, 2, 3, 4, 5, None]   # no reply to the notification
+    assert replies[0]["result"]["serverInfo"]["name"] == "openagent"
+    assert {t["name"] for t in replies[1]["result"]["tools"]} == {"solve", "check", "presets"}
+    solved = replies[2]["result"]
+    assert not solved["isError"] and "the check passed" in solved["content"][0]["text"]
+    assert solved["structuredContent"]["passed"] and solved["structuredContent"]["repairs"] == 1
+    assert (d / "hello.txt").read_text().strip() == "hi"
+    assert "failed (exit 3)" in replies[3]["result"]["content"][0]["text"]
+    assert replies[4]["error"]["code"] == -32601 and replies[5]["error"]["code"] == -32700
+
+
+def test_doctor(tmp_path, monkeypatch):
+    from openagent import doctor
+    oc = tmp_path / "oc"
+    oc.write_text("#!/bin/sh\nif [ \"$1\" = --version ]; then echo 1.0.0; exit 0; fi\n"
+                  "if [ \"$1\" = models ]; then echo prov/a; echo prov/b; exit 0; fi\nexit 1\n")
+    oc.chmod(0o755)
+    c = doctor.check_opencode(str(oc))
+    assert c.status == "warn" and "1.0.0" in c.detail and doctor.TESTED_OPENCODE in c.fix
+    assert doctor.check_opencode(str(tmp_path / "missing")).status == "fail"
+    assert doctor.check_model(str(oc), "prov/b").status == "ok"
+    bad = doctor.check_model(str(oc), "prov/zzz")
+    assert bad.status == "fail" and "prov/a" in bad.fix
+    assert doctor.check_model(str(oc), None).status == "skip"
+    monkeypatch.setenv("HOME", str(tmp_path))
+    for k in list(os.environ):
+        if k.endswith(doctor.KEY_SUFFIXES) or k == "OPENCODE_CONFIG":
+            monkeypatch.delenv(k)
+    assert doctor.check_credentials().status == "warn"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-secret-value")
+    c = doctor.check_credentials()
+    assert c.status == "ok" and "ANTHROPIC_API_KEY" in c.detail and "secret" not in c.detail
+    text = doctor.render([c, bad])
+    assert "✗ model" in text and "→ try one of" in text and text.endswith("1 problem(s), 0 warning(s)")

@@ -1,0 +1,87 @@
+# Label an issue `openagent` and Open Agent works on it: OpenCode makes the change, your tests decide
+# whether it is done, and a draft pull request with the run's summary comes back.
+#
+# Copy this file to .github/workflows/ in your repository and set:
+#   - the model, and its API key as a repository secret
+#   - the setup step and the check for your project
+#
+# Only people with triage access or above can label issues, so only they can start a run. The agent
+# runs with --auto (it may run any command) on text from the issue: keep it that way.
+name: Open Agent
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  solve:
+    if: github.event.label.name == 'openagent'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The agent's shell must not hold a token that can push. The pull request step below gets its own.
+          persist-credentials: false
+
+      # Your project's toolchain and dependencies: whatever the check needs.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e . pytest
+
+      - id: agent
+        uses: sugeerth/opencodeharness@v0.8.0
+        with:
+          task: |
+            ${{ github.event.issue.title }}
+
+            ${{ github.event.issue.body }}
+          check: pytest -q
+          model: anthropic/claude-sonnet-5-5
+          max-cost: "2"
+          fail-on-failure: "false"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Open a draft pull request
+        if: steps.agent.outputs.changed != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+          PASSED: ${{ steps.agent.outputs.passed }}
+          SUMMARY: ${{ steps.agent.outputs.summary }}
+        run: |
+          branch="openagent/issue-$ISSUE-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -A
+          git commit -m "$TITLE" -m "Closes #$ISSUE. Made by Open Agent on OpenCode."
+          git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$branch"
+          if [ "$PASSED" = "true" ]; then status="the check passes"; else status="the check does not pass yet"; fi
+          { echo "Closes #$ISSUE ($status)."; echo; cat "$SUMMARY"; } > body.md
+          url=$(gh pr create --draft --head "$branch" --title "$TITLE" --body-file body.md)
+          gh issue comment "$ISSUE" --body "Open Agent opened $url: $status."
+
+      - name: Report a run that changed nothing
+        if: steps.agent.outputs.changed == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          STOP: ${{ steps.agent.outputs.stop }}
+        run: |
+          gh issue comment "$ISSUE" --body "Open Agent made no change ($STOP). Run log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openagent-run
+          path: |
+            ${{ steps.agent.outputs.result }}
+            ${{ steps.agent.outputs.trace }}

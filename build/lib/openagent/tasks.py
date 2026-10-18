@@ -56,3 +56,17 @@ def discover(root: str | Path) -> list[Task]:
     if (root / "prompt.txt").is_file():
         return [Task.load(root)]
     return [Task.load(d) for d in sorted(root.iterdir()) if (d / "prompt.txt").is_file()]
+
+
+def resolve(source: str | Path, cache: str | Path, log=lambda _: None) -> Path:
+    """A task directory for `source`: itself, or, for a manifest (.json), the tasks fetched from it into
+    `cache` (once; later calls reuse them)."""
+    source = Path(source)
+    if source.suffix != ".json":
+        return source
+    cache = Path(cache)
+    if not (cache / "fetch.json").is_file():
+        from .gittasks import fetch
+        log(f"fetching the tasks of {source.name} into {cache} (first use only)")
+        fetch(json.loads(source.read_text()), cache, log=log)
+    return cache

@@ -180,6 +180,8 @@ def run_job(j: Job, p: dict, store: Store) -> None:
     files = sorted({f for v in ch.values() for f in v})
     diff = _diff(src, work, files) if p.get("copy", True) else _git_diff(src)
     (j.dir / "diff.patch").write_text(diff)
+    from ..summary import markdown
+    (j.dir / "summary.md").write_text(markdown(out, p["task"], p.get("check") or None))
     s = out.stats
     j.summary = {"passed": out.passed, "stop": rec.get("stop"), "repairs": out.repairs, "files": files,
                  "tokens": s.total_tokens, "cost": round(s.cost, 6), "seconds": round(out.seconds, 1),

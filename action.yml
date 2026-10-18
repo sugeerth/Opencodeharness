@@ -1,0 +1,144 @@
+name: Open Agent
+description: OpenCode, verified and repaired until your check passes. Runs a task on the checked-out repository.
+author: sugeerth
+branding:
+  icon: check-circle
+  color: purple
+
+inputs:
+  task:
+    description: What to do, in plain words (e.g. an issue's title and body). Or use task-file.
+    required: false
+  task-file:
+    description: A file that holds the task (a relative path is from working-directory).
+    required: false
+  check:
+    description: Shell command that must exit 0 when the task is done, e.g. "pytest -q". Without one OpenCode runs once, unverified.
+    required: false
+  model:
+    description: OpenCode provider/model, e.g. anthropic/claude-sonnet-5-5. Defaults to $OPENAGENT_MODEL.
+    required: false
+  preset:
+    description: baseline, guided, openagent or best-of-3.
+    default: openagent
+  harness:
+    description: A harness file (e.g. the harness.json `openagent evolve` writes); overrides preset.
+    required: false
+  rounds:
+    description: Repair rounds after the first try.
+    required: false
+  attempts:
+    description: Parallel attempts; the passing one with the fewest rounds wins.
+    required: false
+  max-cost:
+    description: Stop once the runs have cost this many US dollars.
+    required: false
+  protect:
+    description: Globs the agent may not change, one per line, e.g. "tests/**". Restored before each check.
+    required: false
+  agent:
+    description: OpenCode agent, e.g. build.
+    required: false
+  timeout:
+    description: Seconds per OpenCode run.
+    default: "900"
+  working-directory:
+    description: Where to work.
+    default: "."
+  opencode-version:
+    description: The opencode-ai npm version to install (if that version is not already on PATH). "skip" uses whatever opencode is on PATH.
+    default: "1.19.3"
+  fail-on-failure:
+    description: Fail the step when the check does not pass.
+    default: "true"
+
+outputs:
+  passed:
+    description: '"true" if the check passed.'
+    value: ${{ steps.run.outputs.passed }}
+  stop:
+    description: Why the run ended (passed, rounds_exhausted, stalled, budget, agent_error, infra_error, ...).
+    value: ${{ steps.run.outputs.stop }}
+  changed:
+    description: How many files the agent added, changed or deleted.
+    value: ${{ steps.run.outputs.changed }}
+  cost:
+    description: What the model calls cost, in US dollars, as OpenCode reports it.
+    value: ${{ steps.run.outputs.cost }}
+  summary:
+    description: Path of a Markdown summary of the run (for a pull request body).
+    value: ${{ steps.run.outputs.summary }}
+  result:
+    description: Path of the full run record (JSON).
+    value: ${{ steps.run.outputs.result }}
+  trace:
+    description: Directory with the run as an AgentDiff trace.
+    value: ${{ steps.run.outputs.trace }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Open Agent and OpenCode
+      shell: bash
+      env:
+        OC_VERSION: ${{ inputs.opencode-version }}
+      run: |
+        python3 -m venv "$RUNNER_TEMP/openagent-venv"
+        "$RUNNER_TEMP/openagent-venv/bin/pip" install --quiet "$GITHUB_ACTION_PATH"
+        echo "$RUNNER_TEMP/openagent-venv/bin" >> "$GITHUB_PATH"
+        if [ "$OC_VERSION" != "skip" ] && [ "$(opencode --version 2>/dev/null)" != "$OC_VERSION" ]; then
+          npm install --global --silent "opencode-ai@$OC_VERSION"
+        fi
+        opencode --version
+
+    - name: Run Open Agent
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      # Inputs reach the shell as environment variables, never pasted into the script: an issue's text
+      # can hold anything.
+      env:
+        OA_TASK: ${{ inputs.task }}
+        OA_TASK_FILE: ${{ inputs.task-file }}
+        OA_CHECK: ${{ inputs.check }}
+        OA_MODEL: ${{ inputs.model }}
+        OA_PRESET: ${{ inputs.preset }}
+        OA_HARNESS: ${{ inputs.harness }}
+        OA_ROUNDS: ${{ inputs.rounds }}
+        OA_ATTEMPTS: ${{ inputs.attempts }}
+        OA_MAX_COST: ${{ inputs.max-cost }}
+        OA_PROTECT: ${{ inputs.protect }}
+        OA_AGENT: ${{ inputs.agent }}
+        OA_TIMEOUT: ${{ inputs.timeout }}
+        OA_FAIL: ${{ inputs.fail-on-failure }}
+      run: |
+        out="$RUNNER_TEMP/openagent-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$RANDOM"
+        mkdir -p "$out"
+        if [ -n "$OA_TASK_FILE" ]; then OA_TASK="$(cat "$OA_TASK_FILE")"; fi
+        if [ -z "$OA_TASK" ]; then echo "::error::Open Agent: give task or task-file"; exit 2; fi
+        args=(run --json "$out/result.json" --summary "$out/summary.md" --trace "$out/trace" --timeout "$OA_TIMEOUT")
+        [ -n "$OA_CHECK" ] && args+=(--check "$OA_CHECK")
+        [ -n "$OA_MODEL" ] && args+=(--model "$OA_MODEL")
+        if [ -n "$OA_HARNESS" ]; then args+=(--harness "$OA_HARNESS"); else args+=(--preset "$OA_PRESET"); fi
+        [ -n "$OA_ROUNDS" ] && args+=(--rounds "$OA_ROUNDS")
+        [ -n "$OA_ATTEMPTS" ] && args+=(--attempts "$OA_ATTEMPTS")
+        [ -n "$OA_MAX_COST" ] && args+=(--max-cost "$OA_MAX_COST")
+        [ -n "$OA_AGENT" ] && args+=(--agent "$OA_AGENT")
+        while IFS= read -r glob; do
+          if [ -n "$glob" ]; then args+=(--protect "$glob"); fi
+        done <<< "$OA_PROTECT"
+        set +e
+        printf '%s' "$OA_TASK" | openagent "${args[@]}"
+        code=$?
+        set -e
+        python3 "$GITHUB_ACTION_PATH/src/openagent/action_outputs.py" "$out/result.json" >> "$GITHUB_OUTPUT"
+        {
+          echo "summary=$out/summary.md"
+          echo "result=$out/result.json"
+          echo "trace=$out/trace"
+        } >> "$GITHUB_OUTPUT"
+        if [ -f "$out/summary.md" ]; then cat "$out/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+        if [ "$code" -ne 0 ] && [ "$OA_FAIL" = "true" ]; then
+          echo "::error::Open Agent: the check did not pass (exit $code)"
+          exit "$code"
+        fi

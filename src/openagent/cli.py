@@ -8,6 +8,7 @@
 """
 import argparse
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -33,7 +34,8 @@ def log(msg: str) -> None:
 
 def _opencode_args(p: argparse.ArgumentParser) -> None:
     g = p.add_argument_group("OpenCode")
-    g.add_argument("-m", "--model", help="provider/model, e.g. anthropic/claude-sonnet-5-5")
+    g.add_argument("-m", "--model", default=os.environ.get("OPENAGENT_MODEL") or None,
+                   help="provider/model, e.g. anthropic/claude-sonnet-5-5 (default: $OPENAGENT_MODEL)")
     g.add_argument("--agent", help="OpenCode agent, e.g. build")
     g.add_argument("--binary", default="opencode", help="path to the opencode executable")
     g.add_argument("--timeout", type=int, default=900, help="seconds per OpenCode run (default 900)")
@@ -98,6 +100,9 @@ def cmd_run(a) -> int:
     if a.trace:
         p = write_trajectory(to_trajectory(out, "task", task, a.check, 1, a.model), a.trace)
         log(f"wrote AgentDiff trace {p}")
+    if a.summary:
+        from .summary import markdown
+        Path(a.summary).write_text(markdown(out, task, a.check))
     return 0 if out.passed else 1
 
 
@@ -273,6 +278,53 @@ def cmd_sandbox_build(a) -> int:
     return build(a.image, log)
 
 
+def cmd_sim(a) -> int:
+    """Serve the scripted model in the foreground, so plain `opencode` (or `openagent run`) can use it."""
+    import signal
+    import threading
+    from .sim import ScriptedModel
+    dirs = []
+    for d in a.tasks:
+        d = Path(d)
+        dirs += [d] if (d / "sim.json").is_file() else sorted(x for x in d.iterdir() if (x / "sim.json").is_file())
+    if not dirs:
+        log("no task with a sim.json playbook in " + " ".join(a.tasks))
+        return 2
+    config_dir = Path(a.config_dir or tempfile.mkdtemp(prefix="openagent-sim-"))
+    with ScriptedModel(dirs, config_dir, a.port) as sim:
+        env = {**sim.env(), "OPENAGENT_MODEL": sim.MODEL}
+        text = "".join(f"{k}={v}\n" for k, v in env.items())
+        if a.env_file:
+            with open(a.env_file, "a") as f:  # appends: GitHub's $GITHUB_ENV works as is
+                f.write(text)
+        print(text, end="", flush=True)
+        log(f"scripted model {sim.MODEL} at {sim.url} with {len(dirs)} playbook(s); Ctrl-C stops it")
+        stop = threading.Event()
+        signal.signal(signal.SIGTERM, lambda *_: stop.set())
+        try:
+            stop.wait()
+        except KeyboardInterrupt:
+            pass
+    return 0
+
+
+def cmd_mcp(a) -> int:
+    from .mcp import serve
+    log(f"MCP server on stdio (OpenCode model: {a.model or 'its default'})")
+    serve(_make_oc(a), log=log)
+    return 0
+
+
+def cmd_doctor(a) -> int:
+    from .doctor import render, run
+    checks = run(a.binary, a.model, a.ping)
+    if a.json:
+        print(json.dumps([c.__dict__ for c in checks], indent=2))
+    else:
+        print(render(checks))
+    return 1 if any(c.status == "fail" for c in checks) else 0
+
+
 def cmd_presets(_a) -> int:
     for name, s in PRESETS.items():
         print(f"{name:<10} preamble={s.preamble} reveal_check={s.reveal_check} "
@@ -314,6 +366,7 @@ def main(argv=None) -> int:
     r.add_argument("--max-cost", type=float, metavar="USD", help="stop once the runs have cost this much")
     r.add_argument("--json", metavar="FILE", help="write the full run record as JSON")
     r.add_argument("--trace", metavar="DIR", help="write the run as an AgentDiff trace into DIR")
+    r.add_argument("--summary", metavar="FILE", help="write a Markdown summary (for a pull request or a CI job summary)")
     _opencode_args(r)
     _strategy_args(r)
     r.set_defaults(fn=cmd_run)
@@ -387,6 +440,24 @@ def main(argv=None) -> int:
     sbb = sbsub.add_parser("build", help="build the default runner image (Python 3.13, Node 22, OpenCode, pytest)")
     sbb.add_argument("--image", default="openagent-runner:latest")
     sbb.set_defaults(fn=cmd_sandbox_build)
+
+    sm = sub.add_parser("sim", help="serve the scripted model of the demo, for trying OpenCode and Open Agent offline")
+    sm.add_argument("tasks", nargs="+", help="task directories with sim.json playbooks (or directories of them)")
+    sm.add_argument("--port", type=int, default=0, help="port on 127.0.0.1 (default: a free one)")
+    sm.add_argument("--env-file", help="also append the environment OpenCode needs to this file, e.g. $GITHUB_ENV")
+    sm.add_argument("--config-dir", help="where to write the OpenCode config (default: a temporary directory)")
+    sm.set_defaults(fn=cmd_sim)
+
+    mc = sub.add_parser("mcp", help="serve Open Agent as an MCP server on stdio (tools: solve, check, presets)")
+    _opencode_args(mc)
+    mc.set_defaults(fn=cmd_mcp)
+
+    dr = sub.add_parser("doctor", help="check that OpenCode, credentials, the model, Docker and AgentDiff are ready")
+    dr.add_argument("-m", "--model", default=os.environ.get("OPENAGENT_MODEL") or None, help="provider/model to check")
+    dr.add_argument("--binary", default="opencode")
+    dr.add_argument("--ping", action="store_true", help="also make one tiny real run through OpenCode (costs a few tokens)")
+    dr.add_argument("--json", action="store_true")
+    dr.set_defaults(fn=cmd_doctor)
 
     sub.add_parser("presets", help="list strategy presets").set_defaults(fn=cmd_presets)
 
