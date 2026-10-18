@@ -61,7 +61,8 @@ def check_opencode(binary: str) -> Check:
 
 
 def check_credentials() -> Check:
-    auth = Path.home() / ".local" / "share" / "opencode" / "auth.json"
+    from .sandbox import opencode_data_dir
+    auth = opencode_data_dir() / "auth.json"
     stored = []
     if auth.is_file():
         try:
@@ -90,6 +91,8 @@ def check_model(binary: str, model: str | None) -> Check:
     if not shutil.which(binary):
         return Check("model", "skip", "OpenCode is not installed")
     provider = model.split("/", 1)[0]
+    if not provider or provider.startswith("-"):
+        return Check("model", "fail", f"{model!r} is not a provider/model name", "e.g. anthropic/claude-sonnet-5-5")
     code, out = _run([binary, "models", provider], timeout=90)
     listed = {ln.strip() for ln in out.splitlines()}
     if model in listed:

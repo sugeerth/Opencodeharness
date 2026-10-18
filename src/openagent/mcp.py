@@ -25,6 +25,15 @@ from .summary import markdown
 from .verify import excerpt, run_check
 
 PROTOCOL = "2025-06-18"
+SUPPORTED = ("2025-06-18", "2025-03-26", "2024-11-05")
+
+
+class MethodNotFound(Exception):
+    pass
+
+
+class InvalidParams(Exception):
+    pass
 
 TOOLS = [
     {"name": "solve",
@@ -59,20 +68,28 @@ class Server:
 
     def handle(self, msg: dict) -> dict | None:
         """One JSON-RPC message in; the response out (None for a notification)."""
+        if not isinstance(msg, dict):  # a batch or a bare value: not a request this server takes
+            return {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request"}}
         method, mid = msg.get("method"), msg.get("id")
-        if mid is None:  # notifications (initialized, cancelled): nothing to answer
+        if mid is None or "method" not in msg:  # notifications, and responses: nothing to answer
             return None
+        params = msg.get("params") or {}
+        if not isinstance(params, dict):
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32602, "message": "params must be an object"}}
         try:
-            result = self.dispatch(method, msg.get("params") or {})
-        except KeyError as e:
-            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown method {e}"}}
-        except Exception as e:  # a tool that blew up is reported, the server keeps going
+            result = self.dispatch(method, params)
+        except MethodNotFound:
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown method {method!r}"}}
+        except InvalidParams as e:
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32602, "message": str(e)}}
+        except Exception as e:  # the server keeps going
             return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32603, "message": str(e)}}
         return {"jsonrpc": "2.0", "id": mid, "result": result}
 
     def dispatch(self, method: str, params: dict) -> dict:
         if method == "initialize":
-            return {"protocolVersion": params.get("protocolVersion") or PROTOCOL,
+            asked = params.get("protocolVersion")
+            return {"protocolVersion": asked if asked in SUPPORTED else PROTOCOL,
                     "capabilities": {"tools": {}},
                     "serverInfo": {"name": "openagent", "version": __version__},
                     "instructions": "Use `solve` to have OpenCode make a change that a check command verifies."}
@@ -82,16 +99,27 @@ class Server:
             return {"tools": TOOLS}
         if method == "tools/call":
             name, args = params.get("name"), params.get("arguments") or {}
-            fn = {"solve": self.solve, "check": self.check, "presets": self.presets}.get(name)
-            if fn is None:
-                return _text(f"unknown tool {name!r}", error=True)
-            return fn(args)
-        raise KeyError(method)
+            tool = next((t for t in TOOLS if t["name"] == name), None)
+            if tool is None:
+                raise InvalidParams(f"unknown tool {name!r}")
+            if not isinstance(args, dict):
+                raise InvalidParams("arguments must be an object")
+            missing = [k for k in tool["inputSchema"].get("required", []) if args.get(k) in (None, "")]
+            if missing:
+                return _text(f"missing argument(s): {', '.join(missing)}", error=True)
+            fn = {"solve": self.solve, "check": self.check, "presets": self.presets}[name]
+            try:
+                return fn(args)
+            except Exception as e:  # a tool that fails is a tool result with isError, as MCP expects
+                return _text(f"{type(e).__name__}: {e}", error=True)
+        raise MethodNotFound(method)
 
     def solve(self, a: dict) -> dict:
         d = Path(a["directory"]).expanduser()
         if not d.is_dir():
             return _text(f"{d} is not a directory", error=True)
+        if (a.get("preset") or "openagent") not in PRESETS:
+            return _text(f"unknown preset {a['preset']!r}: use one of {', '.join(PRESETS)}", error=True)
         strategy = with_overrides(PRESETS[a.get("preset") or "openagent"], rounds=a.get("rounds"))
         oc = replace(self.oc, model=a["model"]) if a.get("model") else self.oc
         self.log(f"solve in {d}: {a['task'][:80]}")
@@ -102,7 +130,10 @@ class Server:
         return result
 
     def check(self, a: dict) -> dict:
-        r = run_check(a["command"], Path(a["directory"]).expanduser(), a.get("timeout") or 600)
+        d = Path(a["directory"]).expanduser()
+        if not d.is_dir():
+            return _text(f"{d} is not a directory", error=True)
+        r = run_check(a["command"], d, a.get("timeout") or 600)
         head = f"{'passed' if r.passed else 'failed'} (exit {r.exit_code}) in {r.seconds:.1f}s"
         return _text(head if r.passed else head + "\n\n" + excerpt(r.output))
 

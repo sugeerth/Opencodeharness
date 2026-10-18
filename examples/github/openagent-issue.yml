@@ -5,27 +5,32 @@
 #   - the model, and its API key as a repository secret
 #   - the setup step and the check for your project
 #
-# Only people with triage access or above can label issues, so only they can start a run. The agent
-# runs with --auto (it may run any command) on text from the issue: keep it that way.
+# Only people with triage access or above can label issues, so only they can start a run.
+#
+# Two jobs, on purpose. The agent runs with --auto (it may run any command) on text from the issue,
+# so the job it runs in can only read the repository, and nothing it leaves behind is trusted: not
+# the checkout (a planted .git hook or config would run with any token used there later), not the
+# runner. It hands over one thing, a patch. The second job, which may push, starts from a fresh
+# checkout on a fresh runner and only applies that patch.
 name: Open Agent
 on:
   issues:
     types: [labeled]
-
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
 
 jobs:
   solve:
     if: github.event.label.name == 'openagent'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      passed: ${{ steps.agent.outputs.passed }}
+      stop: ${{ steps.agent.outputs.stop }}
+      changed: ${{ steps.agent.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
         with:
-          # The agent's shell must not hold a token that can push. The pull request step below gets its own.
           persist-credentials: false
 
       # Your project's toolchain and dependencies: whatever the check needs.
@@ -48,35 +53,20 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: Open a draft pull request
-        if: steps.agent.outputs.changed != '0'
+      - name: Hand over the change as a patch
         env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ github.event.issue.number }}
-          TITLE: ${{ github.event.issue.title }}
-          PASSED: ${{ steps.agent.outputs.passed }}
           SUMMARY: ${{ steps.agent.outputs.summary }}
         run: |
-          branch="openagent/issue-$ISSUE-$GITHUB_RUN_ID"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$branch"
+          mkdir -p "$RUNNER_TEMP/handover"
+          # only what git tracks or would track: ignored build output stays behind
           git add -A
-          git commit -m "$TITLE" -m "Closes #$ISSUE. Made by Open Agent on OpenCode."
-          git push "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$branch"
-          if [ "$PASSED" = "true" ]; then status="the check passes"; else status="the check does not pass yet"; fi
-          { echo "Closes #$ISSUE ($status)."; echo; cat "$SUMMARY"; } > body.md
-          url=$(gh pr create --draft --head "$branch" --title "$TITLE" --body-file body.md)
-          gh issue comment "$ISSUE" --body "Open Agent opened $url: $status."
+          git diff --cached --binary > "$RUNNER_TEMP/handover/change.patch"
+          cp "$SUMMARY" "$RUNNER_TEMP/handover/summary.md" 2>/dev/null || echo "Open Agent wrote no summary." > "$RUNNER_TEMP/handover/summary.md"
 
-      - name: Report a run that changed nothing
-        if: steps.agent.outputs.changed == '0'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ github.event.issue.number }}
-          STOP: ${{ steps.agent.outputs.stop }}
-        run: |
-          gh issue comment "$ISSUE" --body "Open Agent made no change ($STOP). Run log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openagent-handover
+          path: ${{ runner.temp }}/handover
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -85,3 +75,42 @@ jobs:
           path: |
             ${{ steps.agent.outputs.result }}
             ${{ steps.agent.outputs.trace }}
+
+  pull-request:
+    needs: solve
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: openagent-handover
+          path: ${{ runner.temp }}/handover
+
+      - name: Open a draft pull request, or say why there is none
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+          PASSED: ${{ needs.solve.outputs.passed }}
+          STOP: ${{ needs.solve.outputs.stop }}
+          H: ${{ runner.temp }}/handover
+        run: |
+          if [ ! -s "$H/change.patch" ]; then
+            gh issue comment "$ISSUE" --body "Open Agent made no change ($STOP). Run log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            exit 0
+          fi
+          branch="openagent/issue-$ISSUE-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git apply --index "$H/change.patch"
+          git commit -m "$TITLE" -m "Closes #$ISSUE. Made by Open Agent on OpenCode."
+          git push origin "$branch"
+          if [ "$PASSED" = "true" ]; then status="the check passes"; else status="the check does not pass yet"; fi
+          { echo "Closes #$ISSUE ($status)."; echo; cat "$H/summary.md"; } > "$RUNNER_TEMP/body.md"
+          url=$(gh pr create --draft --head "$branch" --title "$TITLE" --body-file "$RUNNER_TEMP/body.md")
+          gh issue comment "$ISSUE" --body "Open Agent opened $url: $status."

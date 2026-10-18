@@ -56,7 +56,7 @@ class Docker:
         home = Path(tempfile.gettempdir()) / "openagent-sandbox" / key
         auth_dst = home / ".local" / "share" / "opencode" / "auth.json"
         if not auth_dst.exists():
-            auth_src = Path.home() / ".local" / "share" / "opencode" / "auth.json"
+            auth_src = opencode_data_dir() / "auth.json"
             auth_dst.parent.mkdir(parents=True, exist_ok=True)
             if auth_src.is_file():
                 shutil.copy2(auth_src, auth_dst)
@@ -105,11 +105,21 @@ class Docker:
         subprocess.run(["docker", "rm", "-f", name], capture_output=True, timeout=60)
 
 
+def opencode_data_dir() -> Path:
+    """Where OpenCode keeps auth.json: $XDG_DATA_HOME/opencode, by default ~/.local/share/opencode."""
+    base = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    return Path(base) / "opencode"
+
+
 def available() -> str:
     """Empty if Docker is usable; else why not."""
     if shutil.which("docker") is None:
         return "docker is not installed"
-    p = subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], capture_output=True, text=True)
+    try:
+        p = subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], capture_output=True, text=True,
+                           timeout=30)
+    except subprocess.TimeoutExpired:
+        return "the Docker daemon did not answer in 30s"
     return "" if p.returncode == 0 else f"the Docker daemon is not reachable: {p.stderr.strip()[-200:]}"
 
 

@@ -68,6 +68,10 @@ The exit code is 0 only if the check passes. Progress goes to stderr, and the ag
 The repository is a GitHub Action. [`examples/github/openagent-issue.yml`](examples/github/openagent-issue.yml)
 is a complete workflow: label an issue `openagent`, and OpenCode works on it in CI with your tests as the
 check, then a draft pull request comes back with the run's summary as its body (or a comment saying why nothing changed).
+It uses two jobs on purpose. The agent runs with `--auto` on the issue's text, so its job can only read the
+repository and hands over nothing but a patch. A second job, the only one that may push, starts from a fresh
+checkout on a fresh runner and applies that patch. Running `git commit` with a token in the agent's checkout
+would let a planted `.git` hook steal the token.
 
 ```yaml
 - uses: actions/checkout@v4
@@ -362,6 +366,21 @@ and fixed, and each now has a regression test:
 8. Non-ASCII test paths crashed `tasks from-git`.
 9. A passing run could be labelled a timeout in its trace.
 10. A missing `-C` directory gave a misleading error.
+
+A second review, of 0.8, found six more. Each is fixed and tested:
+1. The example workflow pushed from the checkout the agent had controlled, so a planted git hook could read the push token. It now uses two jobs, and they share only a patch.
+2. `openagent run` wrote no `--summary` or `--json` when the run could not start, so the action's job summary was empty and its error message was wrong.
+3. The MCP server died on a JSON-RPC batch or any non-object message.
+4. The MCP server reported a missing tool argument as "unknown method". Tool failures are now `isError` results, as the spec asks.
+5. The MCP server accepted any protocol version a client asked for.
+6. The MCP server replied to JSON-RPC responses.
+
+The review's smaller findings are fixed too:
+- Untrusted text in summaries is escaped: fences, HTML and @mentions.
+- `docker info` now has a timeout.
+- `$XDG_DATA_HOME` is respected.
+- `sim` keeps your `NO_PROXY`.
+- `--show-failure` works when the check is hidden.
 
 ## Development
 

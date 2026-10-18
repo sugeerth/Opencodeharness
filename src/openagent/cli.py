@@ -88,6 +88,11 @@ def cmd_run(a) -> int:
     if not a.check:
         log("no --check given: OpenCode runs once with no verification or repair")
     out = solve(task, a.dir, a.check, _make_oc(a), strategy, a.protect, a.check_timeout, log, a.max_cost)
+    if a.summary:  # written for a run that could not start too: a CI job summary needs to say why
+        from .summary import markdown
+        Path(a.summary).write_text(markdown(out, task, a.check))
+    if a.json:
+        Path(a.json).write_text(json.dumps(out.to_dict(), indent=2))
     if out.error:
         log(out.error)
         return 2
@@ -98,14 +103,9 @@ def cmd_run(a) -> int:
     touched = sum(len(v) for v in ch.values())
     log(f"{'PASSED' if out.passed else 'FAILED'} ({out.best.stop}) after {out.repairs} repair(s), "
         f"{touched} file(s) changed, {s.total_tokens:,} tokens, ${s.cost:.4f}, {out.seconds:.0f}s")
-    if a.json:
-        Path(a.json).write_text(json.dumps(out.to_dict(), indent=2))
     if a.trace:
         p = write_trajectory(to_trajectory(out, "task", task, a.check, 1, a.model), a.trace)
         log(f"wrote AgentDiff trace {p}")
-    if a.summary:
-        from .summary import markdown
-        Path(a.summary).write_text(markdown(out, task, a.check))
     return 0 if out.passed else 1
 
 
@@ -289,6 +289,9 @@ def cmd_sim(a) -> int:
     dirs = []
     for d in a.tasks:
         d = Path(d)
+        if not d.is_dir():
+            log(f"not a directory: {d}")
+            return 2
         dirs += [d] if (d / "sim.json").is_file() else sorted(x for x in d.iterdir() if (x / "sim.json").is_file())
     if not dirs:
         log("no task with a sim.json playbook in " + " ".join(a.tasks))

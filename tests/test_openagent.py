@@ -1136,6 +1136,7 @@ def test_doctor(tmp_path, monkeypatch):
     assert bad.status == "fail" and "prov/a" in bad.fix
     assert doctor.check_model(str(oc), None).status == "skip"
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
     for k in list(os.environ):
         if k.endswith(doctor.KEY_SUFFIXES) or k == "OPENCODE_CONFIG":
             monkeypatch.delenv(k)
@@ -1170,3 +1171,76 @@ def test_evolve_proposes_show_failure_once():
     s = apply(PRESETS["openagent"], c, "v1")
     assert s.show_failure and s.instructions == PRESETS["openagent"].instructions
     assert "show_failure" not in [c.id for c, _ in propose(sigs, set(), s)]
+
+
+# --- regressions from the 0.8 review ------------------------------------------------------
+
+def test_mcp_rejects_malformed_messages_without_dying(fake, tmp_path):
+    import io
+    from openagent.mcp import serve
+    d = ws(tmp_path)
+    msgs = ["[1, 2]", '"x"',
+            json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": [1]}),
+            json.dumps({"jsonrpc": "2.0", "id": 2, "result": {}}),                       # a response: no reply
+            json.dumps({"jsonrpc": "2.0", "id": 3, "method": "initialize", "params": {"protocolVersion": "1999-01-01"}}),
+            json.dumps({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "solve", "arguments": {"directory": str(d)}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "solve", "arguments": {"task": "t", "directory": str(d), "preset": "nope"}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "check", "arguments": {"command": "true", "directory": str(tmp_path / "missing")}}}),
+            json.dumps({"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "nope"}}),
+            json.dumps({"jsonrpc": "2.0", "id": 8, "method": "ping"})]
+    out = io.StringIO()
+    serve(fake("good"), io.StringIO("\n".join(msgs) + "\n"), out)
+    r = [json.loads(l) for l in out.getvalue().splitlines()]
+    assert [x["error"]["code"] for x in r[:2]] == [-32600, -32600]
+    assert r[2]["id"] == 1 and r[2]["error"]["code"] == -32602
+    assert r[3]["id"] == 3 and r[3]["result"]["protocolVersion"] == "2025-06-18"
+    assert r[4]["result"]["isError"] and "task" in r[4]["result"]["content"][0]["text"]
+    assert r[5]["result"]["isError"] and "unknown preset" in r[5]["result"]["content"][0]["text"]
+    assert r[6]["result"]["isError"] and "not a directory" in r[6]["result"]["content"][0]["text"]
+    assert r[7]["error"]["code"] == -32602
+    assert r[8]["id"] == 8 and r[8]["result"] == {}
+    assert len(r) == 9  # the response got no reply
+
+
+def test_run_writes_summary_and_json_when_it_cannot_start(fake, tmp_path):
+    exe = fake("good").binary
+    rc = main(["run", "t", "-C", str(ws(tmp_path)), "-c", "nonexistent_cmd_xyz", "--binary", exe,
+               "--summary", str(tmp_path / "s.md"), "--json", str(tmp_path / "r.json")])
+    assert rc == 2
+    assert "could not run" in (tmp_path / "s.md").read_text()
+    assert json.loads((tmp_path / "r.json").read_text())["error"]
+
+
+def test_summary_escapes_untrusted_text(fake, tmp_path):
+    from openagent.summary import markdown, _fence
+    out = solve("t", ws(tmp_path), "echo '```'; echo '</details>'; false", fake("never"), Strategy(rounds=0))
+    md = markdown(out, "ping @octocat </details> <img src=x>", "false")
+    assert "@octocat" not in md and "&lt;/details&gt;" in md and "<img" not in md
+    assert _fence("a ``` b") == "````"
+    body = md.split("Last check output</summary>")[1]
+    fence = body.split("\n")[2]
+    assert fence == "````" and body.count("</details>") >= 1
+
+
+def test_show_failure_works_with_a_hidden_check(fake, tmp_path):
+    from openagent.agent import Strategy as S
+    from openagent.verify import CheckResult
+    p = first_prompt("t", "pytest", S(reveal_check=False, show_failure=True),
+                     CheckResult(False, 1, "E   assert 1 == 2", 0.1))
+    assert "assert 1 == 2" in p and "pytest" not in p
+
+
+def test_sim_keeps_the_existing_no_proxy(monkeypatch, tmp_path):
+    from openagent.sim import ScriptedModel
+    monkeypatch.setenv("NO_PROXY", "corp.internal,localhost")
+    env = ScriptedModel([], tmp_path).env()
+    assert env["NO_PROXY"] == "127.0.0.1,localhost,corp.internal"
+
+
+def test_sim_missing_directory(tmp_path):
+    assert main(["sim", str(tmp_path / "nope")]) == 2
+
+
+def test_doctor_rejects_option_like_model(tmp_path):
+    from openagent import doctor
+    assert doctor.check_model("true", "--help").status == "fail"

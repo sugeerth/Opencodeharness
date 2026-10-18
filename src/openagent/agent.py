@@ -200,11 +200,12 @@ def first_prompt(task: str, check: str | None, strategy: Strategy, failing: Chec
         parts.append(PREAMBLE + rules)
     elif rules:
         parts.append("Rules:" + rules)
+    failure = (FAILING_NOW.format(code=failing.exit_code, output=excerpt(failing.output))
+               if check and strategy.show_failure and failing is not None and not failing.passed else "")
     if check and strategy.reveal_check:
-        hint = CHECK_HINT.format(check=check)
-        if strategy.show_failure and failing is not None and not failing.passed:
-            hint += " " + FAILING_NOW.format(code=failing.exit_code, output=excerpt(failing.output))
-        parts.append(hint)
+        parts.append(CHECK_HINT.format(check=check) + (" " + failure if failure else ""))
+    elif failure:  # the check stays hidden; its failure is still the place to start
+        parts.append("The project's checks fail before your change. " + failure.replace("Right now it fails", "They fail", 1))
     parts.append(("Task:\n" if parts else "") + task)
     return "\n\n".join(parts)
 

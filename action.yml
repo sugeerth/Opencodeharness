@@ -138,6 +138,10 @@ runs:
           echo "trace=$out/trace"
         } >> "$GITHUB_OUTPUT"
         if [ -f "$out/summary.md" ]; then cat "$out/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+        if [ "$code" -eq 2 ]; then
+          echo "::error::Open Agent could not run the task (see the log and the job summary)"
+          exit 2
+        fi
         if [ "$code" -ne 0 ] && [ "$OA_FAIL" = "true" ]; then
           echo "::error::Open Agent: the check did not pass (exit $code)"
           exit "$code"

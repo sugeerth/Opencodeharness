@@ -4,6 +4,8 @@ It says what was asked, whether the check passed, how each round went (what the 
 the check said), what it cost, and the agent's last message: what a reviewer needs to decide whether
 to look closer.
 """
+import re
+
 from .agent import Outcome
 from .verify import excerpt
 
@@ -13,6 +15,19 @@ STOP = {"passed": "the check passed", "done": "the agent finished (no check)", "
         "failed": "the check failed", "setup_failed": "the setup command failed"}
 
 
+def _fence(text: str) -> str:
+    """A code fence longer than any run of backticks in `text`, so the text can't close it."""
+    longest = max((len(m) for m in re.findall(r"`+", text)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def _safe(text: str) -> str:
+    """Untrusted text (the issue, the agent's message) for a pull request body: no HTML that could
+    break the layout, and no @mentions that would notify people."""
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return re.sub(r"@(?=[A-Za-z0-9_-])", "@\u200b", text)
+
+
 def _files(changes: dict) -> list[str]:
     marks = {"added": "+", "modified": "~", "deleted": "-"}
     return [f"`{marks[k]} {p}`" for k in ("added", "modified", "deleted") for p in changes.get(k, [])]
@@ -20,14 +35,14 @@ def _files(changes: dict) -> list[str]:
 
 def markdown(out: Outcome, task: str, check: str | None, title: str = "Open Agent") -> str:
     if out.error:
-        return f"## {title}: error\n\n{out.error}\n"
+        return f"## {title}: could not run\n\n{_safe(out.error)}\n"
     b = out.best
     s = out.stats
     verdict = "passed" if out.passed else "did not pass"
     head = (f"## {title}: {'✅' if out.passed else '❌'} the check {verdict}" if check
             else f"## {title}: {'✅' if out.passed else '❌'} {STOP.get(b.stop, b.stop) if b else 'no run'}")
     lines = [head, ""]
-    lines += ["> " + ln for ln in task.strip().splitlines()[:12]] + [""]
+    lines += ["> " + _safe(ln) for ln in task.strip().splitlines()[:12]] + [""]
     if out.preflight and out.preflight.passed:
         lines += ["The check already passed before the agent started.", ""]
     facts = [("Strategy", f"`{out.strategy.name}`"),
@@ -50,10 +65,11 @@ def markdown(out: Outcome, task: str, check: str | None, title: str = "Open Agen
         lines.append("")
         last = b.rounds[-1].check
         if last is not None and not last.passed:
-            lines += ["<details><summary>Last check output</summary>", "", "```",
-                      excerpt(last.output, max_lines=60, tail=20), "```", "", "</details>", ""]
+            text = excerpt(last.output, max_lines=60, tail=20)
+            fence = _fence(text)
+            lines += ["<details><summary>Last check output</summary>", "", fence, text, fence, "", "</details>", ""]
     if out.final_text.strip():
-        lines += ["<details><summary>The agent's last message</summary>", "", out.final_text.strip()[:4000], "",
+        lines += ["<details><summary>The agent's last message</summary>", "", _safe(out.final_text.strip()[:4000]), "",
                   "</details>", ""]
     lines += ["<sub>[Open Agent](https://github.com/sugeerth/opencodeharness) on "
               "[OpenCode](https://github.com/sst/opencode)</sub>", ""]

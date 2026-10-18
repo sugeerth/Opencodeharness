@@ -211,6 +211,12 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
 
+def _no_proxy(var: str) -> str:
+    """localhost added to the existing NO_PROXY, not put in its place."""
+    have = [h for h in os.environ.get(var, "").split(",") if h.strip()]
+    return ",".join(dict.fromkeys(["127.0.0.1", "localhost", *have]))
+
+
 class ScriptedModel:
     """`with ScriptedModel(task_dirs) as sim:` serves the playbooks on localhost; `sim.env()` is the
     environment that points OpenCode at it as the model `scripted/coder`."""
@@ -234,7 +240,7 @@ class ScriptedModel:
         return {"OPENCODE_CONFIG": str(self.config), "OPENCODE_DISABLE_MODELS_FETCH": "1",
                 "OPENCODE_DISABLE_AUTOUPDATE": "1", "OPENCODE_DISABLE_LSP_DOWNLOAD": "1",
                 "OPENCODE_DISABLE_DEFAULT_PLUGINS": "1", "OPENCODE_DISABLE_CLAUDE_CODE": "1",
-                "NO_PROXY": "127.0.0.1,localhost", "no_proxy": "127.0.0.1,localhost"}
+                "NO_PROXY": _no_proxy("NO_PROXY"), "no_proxy": _no_proxy("no_proxy")}
 
     def __enter__(self) -> "ScriptedModel":
         self.config.parent.mkdir(parents=True, exist_ok=True)
