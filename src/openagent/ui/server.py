@@ -37,6 +37,7 @@ PAGE = Path(__file__).with_name("index.html")
 EXAMPLES = Path(__file__).resolve().parents[3] / "examples" / "tasks"
 REALWORLD = Path(__file__).resolve().parents[3] / "benchmarks" / "realworld-v1.json"
 REALWORLD_GO = Path(__file__).resolve().parents[3] / "benchmarks" / "realworld-go-v1.json"
+REALWORLD_JS = Path(__file__).resolve().parents[3] / "benchmarks" / "realworld-js-v1.json"
 MAX_DIFF = 400_000
 FAVICON = (b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" '
            b'fill="#0f6e5f"/><path d="M11 9l12 7-12 7z" fill="#fff"/></svg>')
@@ -327,6 +328,7 @@ def make_handler(store: Store, token: str):
                                        "examples_exist": EXAMPLES.is_dir(), "presets": list(PRESETS),
                                        "realworld": str(REALWORLD) if REALWORLD.is_file() else None,
                                        "realworld_go": str(REALWORLD_GO) if REALWORLD_GO.is_file() else None,
+                                       "realworld_js": str(REALWORLD_JS) if REALWORLD_JS.is_file() else None,
                                        "docker": not __import__("openagent.sandbox", fromlist=["available"]).available(),
                                        "home": str(store.home), "cwd": os.getcwd()})
                 if parts == ["api", "jobs"]:

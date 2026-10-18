@@ -1,0 +1,872 @@
+{
+ "name": "realworld-js-v1",
+ "format": "openagent-manifest/1",
+ "description": "Real changes from the histories of eight open-source JavaScript/TypeScript libraries (commander.js, dayjs, js-yaml, luxon, node-semver, path-to-regexp, qs, validator.js). Each task starts from a commit's parent, is prompted with the commit message, and is graded by the commit's own tests, held out, with each project's own runner (jest, mocha, tape, tap, vitest, node --test). The setup command installs the project's npm dependencies. Every task was validated: its tests fail on the parent and pass on the commit. Test commands pin TZ=UTC so date-dependent graders (dayjs, luxon) agree on every machine.",
+ "requires": {
+  "node": ">=22",
+  "npm": ">=10"
+ },
+ "made_with": "openagent tasks from-git --look 300 -n 12 --setup 'npm install --ignore-scripts ...' --test-cmd '<the project runner> {tests}'",
+ "tasks": 96,
+ "repos": [
+  {
+   "url": "https://github.com/tj/commander.js",
+   "test_cmd": "export TZ=UTC; npx jest {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "63eed4aa05435575d515311bb5efaf6d88b6be84",
+     "task": "63eed4aa-make-order-not-matter-for-adding-combo-p",
+     "subject": "Make order not matter for adding combo positive/negative options (#2405)",
+     "tests": [
+      "tests/options.bool.combo.test.js"
+     ]
+    },
+    {
+     "sha": "2e96cd388764064fe271f7f452d0dff780355b42",
+     "task": "2e96cd38-list-excess-arguments-in-error-message-2",
+     "subject": "List excess arguments in error message (#2384)",
+     "tests": [
+      "tests/command.exitOverride.test.js"
+     ]
+    },
+    {
+     "sha": "c324ea3d70e00d8cff6d14edde4366af1ed3b7c3",
+     "task": "c324ea3d-add-support-for-groups-of-options-and-co",
+     "subject": "Add support for groups of options and commands in the help (#2328)",
+     "tests": [
+      "tests/command.chain.test.js",
+      "tests/command.helpOption.test.js",
+      "tests/helpGroup.test.js",
+      "tests/option.chain.test.js"
+     ]
+    },
+    {
+     "sha": "f6302de32c773e9f0d3bb71e257d308885af3603",
+     "task": "f6302de3-allow-negative-numbers-as-optional-optio",
+     "subject": "Allow negative numbers as optional optional arguments and command arguments when unambiguous (#2339)",
+     "tests": [
+      "tests/negatives.test.js"
+     ]
+    },
+    {
+     "sha": "68199e64b31851839c03dff1567a81d7714baa08",
+     "task": "68199e64-make-configureoutput-create-copy-of-sett",
+     "subject": "Make .configureOutput() create copy of settings instead of in-place change (#2350)",
+     "tests": [
+      "tests/command.configureOutput.test.js"
+     ]
+    },
+    {
+     "sha": "672e3806c68421f91b3a1f628f6207b8b26d1a2c",
+     "task": "672e3806-trim-description-when-there-s-only-extra",
+     "subject": "Trim description when there's only extra info (#2348)",
+     "tests": [
+      "tests/help.optionDescription.test.js"
+     ]
+    },
+    {
+     "sha": "8263b7f098983fac7545fe7f0c61be2d90b2b53a",
+     "task": "8263b7f0-add-support-for-dual-long-options-when-n",
+     "subject": "Add support for dual long options when no short option (#2312)",
+     "tests": [
+      "tests/option.bad-flags.test.js"
+     ]
+    },
+    {
+     "sha": "437e4e3252a1a5785a3bb7486251bba16befab23",
+     "task": "437e4e32-split-styleitemdescription-into-option-s",
+     "subject": "Split styleItemDescription into option/subcommand/argument (#2283)",
+     "tests": [
+      "tests/help.style.test.js"
+     ]
+    },
+    {
+     "sha": "966720af9470fdf47b67f8ac9ed3ea558dfed8f2",
+     "task": "966720af-throw-for-unsupported-option-flag-setup",
+     "subject": "Throw for unsupported option flag setup (#2270)",
+     "tests": [
+      "tests/option.bad-flags.test.js",
+      "tests/options.registerClash.test.js"
+     ]
+    },
+    {
+     "sha": "58c28eb13da522aeec33f53aa1767e9bd8374dc7",
+     "task": "58c28eb1-disallow-excess-arguments-2223",
+     "subject": "Disallow excess arguments (#2223)",
+     "tests": [
+      "tests/args.literal.test.js",
+      "tests/command.allowExcessArguments.test.js",
+      "tests/command.allowUnknownOption.test.js",
+      "tests/command.copySettings.test.js",
+      "tests/command.hook.test.js",
+      "tests/command.parse.test.js",
+      "tests/command.parseOptions.test.js",
+      "tests/command.positionalOptions.test.js",
+      "tests/command.unknownCommand.test.js"
+     ]
+    },
+    {
+     "sha": "b9ca39062455d25b564269e832372c87a6569f8a",
+     "task": "b9ca3906-add-auto-detection-of-args-when-node-eva",
+     "subject": "Add auto-detection of args when node evaluating script code on command-line (#2164)",
+     "tests": [
+      "tests/command.parse.test.js"
+     ]
+    },
+    {
+     "sha": "09244af7ab71d4241bb9566380db7fd56eceb969",
+     "task": "09244af7-refactor-help-option-implementation-to-h",
+     "subject": "Refactor help option implementation to hold actual Option (#2006)",
+     "tests": [
+      "tests/command.addHelpOption.test.js",
+      "tests/command.chain.test.js",
+      "tests/command.copySettings.test.js"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/iamkun/dayjs",
+   "test_cmd": "export TZ=UTC; npx jest {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "dad46e6fe5198d77d87ed3b121937f77adaee0a6",
+     "task": "dad46e6f-fix-plugin-timezone-plugin-prevent-range",
+     "subject": "fix(plugin): timezone plugin prevent RangeError for invalid Day.js values (#3180)",
+     "tests": [
+      "test/plugin/timezone.test.js"
+     ]
+    },
+    {
+     "sha": "8fda602beac5abbc64230ddc49085aa532320f26",
+     "task": "8fda602b-fix-preserve-unsupported-year-tokens-in",
+     "subject": "fix: preserve unsupported year tokens in format (#3015) (#3016)",
+     "tests": [
+      "test/display.test.js",
+      "test/plugin/duration.test.js"
+     ]
+    },
+    {
+     "sha": "99691c5f3bd1371d3b763d5f9dfaed9a1945a477",
+     "task": "99691c5f-fix-update-updatelocale-plugin-to-merge",
+     "subject": "fix: update updateLocale plugin to merge nested object properties instead of replacing (#3012)",
+     "tests": [
+      "test/plugin/updateLocale.test.js"
+     ]
+    },
+    {
+     "sha": "269a7a9cf3649b7a4b328e771173701764a8480d",
+     "task": "269a7a9c-fix-added-usage-warnings-for-diff-update",
+     "subject": "fix: added usage warnings for diff + updated unit tests (#2948)",
+     "tests": [
+      "test/plugin/devHelper.test.js"
+     ]
+    },
+    {
+     "sha": "88ad3fd5b56291ca3be48400f65f5f8316403c83",
+     "task": "88ad3fd5-test-add-unit-test-for-belarusian-locale",
+     "subject": "test: Add unit test for Belarusian locale (#2934)",
+     "tests": [
+      "test/locale/be.test.js"
+     ]
+    },
+    {
+     "sha": "9e9f76cf117fa834260b30193434bc4481b4b6be",
+     "task": "9e9f76cf-fix-replace-italian-locale-un-ora-fa-wit",
+     "subject": "fix: replace italian locale \"un' ora fa\" with \"un'ora fa\", add tests for it (#2930)",
+     "tests": [
+      "test/locale/it.test.js"
+     ]
+    },
+    {
+     "sha": "8ca74f178eff4bb4eb686676cf35fe7edb815536",
+     "task": "8ca74f17-fix-customparseformat-supports-q-quter-w",
+     "subject": "fix: customParseFormat supports Q quter / w ww weekOfYear (#2705)",
+     "tests": [
+      "test/plugin/customParseFormat.test.js"
+     ]
+    },
+    {
+     "sha": "b575c81a8c9c85c7a0baf6f608a12f9d3ba95bd1",
+     "task": "b575c81a-fix-timezone-plugin-currect-parse-utc-tz",
+     "subject": "fix: timezone plugin currect parse UTC tz (#2693)",
+     "tests": [
+      "test/plugin/timezone.test.js",
+      "test/timezone.test.js"
+     ]
+    },
+    {
+     "sha": "6a42e0d7398639238f575d51287daaf4d495a2a3",
+     "task": "6a42e0d7-fix-add-negativeyear-plugin-support-2640",
+     "subject": "fix: Add NegativeYear Plugin support  (#2640)",
+     "tests": [
+      "test/plugin/negativeYear.test.js"
+     ]
+    },
+    {
+     "sha": "4f4501256fa1bc72128aae1d841bbd782df86aed",
+     "task": "4f450125-fix-fix-timezone-plugin-to-get-correct-l",
+     "subject": "fix: fix timezone plugin to get correct locale setting (#2420)",
+     "tests": [
+      "test/plugin/timezone.test.js"
+     ]
+    },
+    {
+     "sha": "5470a15e437fac803797363063b24f3ba3bd5299",
+     "task": "5470a15e-fix-update-slovenian-locale-for-relative",
+     "subject": "fix: Update Slovenian locale for relative time (#2396)",
+     "tests": [
+      "test/locale/sl.test.js"
+     ]
+    },
+    {
+     "sha": "361be5c7c628614ee833d710acbe154a598b904d",
+     "task": "361be5c7-fix-locale-add-meridiem-in-ar-locale-241",
+     "subject": "fix(locale): add meridiem in `ar` locale (#2418)",
+     "tests": [
+      "test/locale/ar.test.js"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/nodeca/js-yaml",
+   "test_cmd": "export TZ=UTC; node support/build-dist.mjs >/dev/null && node --test {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "3aec5117254d979ae2a8a31ede79255a64b774e9",
+     "task": "3aec5117-fix-error-positions-for-non-printable-ch",
+     "subject": "Fix error positions for non-printable characters, #801",
+     "tests": [
+      "test/core/units/load-error.test.mjs"
+     ]
+    },
+    {
+     "sha": "11aa483b2857e1006ec297dc1b5647fe95ec3f56",
+     "task": "11aa483b-reject-flow-indicators-at-the-start-of-b",
+     "subject": "Reject flow indicators at the start of block plain scalars, #801",
+     "tests": [
+      "test/core/units/load-error.test.mjs"
+     ]
+    },
+    {
+     "sha": "339d8e0444b1f7db66d3c89fdeb0644017126aaf",
+     "task": "339d8e04-refactor-tag-encoder-and-decoder-to-matc",
+     "subject": "Refactor tag encoder and decoder to match the YAML specification",
+     "tests": [
+      "test/core/common/tagname.test.mjs"
+     ]
+    },
+    {
+     "sha": "0cbb471d67b083778e7b2600af2418142bf5bf04",
+     "task": "0cbb471d-fix-whitespace-only-block-scalar-followe",
+     "subject": "Fix whitespace-only block scalar followed by a less indented line, close #802",
+     "tests": [
+      "test/core/parser/parser.test.mjs"
+     ]
+    },
+    {
+     "sha": "6d8adb41c1a8c4a45cb8597ffb149b8842b3a26b",
+     "task": "6d8adb41-fix-forcequotes-quoting-non-string-scala",
+     "subject": "Fix `forceQuotes` quoting non-string scalars, #798",
+     "tests": [
+      "test/core/units/dump-options.test.mjs"
+     ]
+    },
+    {
+     "sha": "6a8e05f9a485188ed730ac81e81ae221352ef480",
+     "task": "6a8e05f9-fix-count-empty-merge-sources-against-ma",
+     "subject": "fix: count empty merge sources against maxTotalMergeKeys (#797)",
+     "tests": [
+      "test/core/pathological.test.mjs"
+     ]
+    },
+    {
+     "sha": "d43c185985e3c5906e331c034aa28833c8a15e14",
+     "task": "d43c1859-fix-flowskipcolonspace-by-forcing-quotef",
+     "subject": "Fix `flowSkipColonSpace` by forcing `quoteFlowKeys`",
+     "tests": [
+      "test/core/units/dump-options.test.mjs"
+     ]
+    },
+    {
+     "sha": "a5fdb31bde3e516722cd110e0b6d9fd94cbec162",
+     "task": "a5fdb31b-add-automatic-double-quoting-for-whitesp",
+     "subject": "Add automatic double quoting for whitespace-only strings, close #534",
+     "tests": [
+      "test/core/units/dump-scalar-styles.test.mjs"
+     ]
+    },
+    {
+     "sha": "9f50a425a7bb97e8431869b8355e830a7a327d7b",
+     "task": "9f50a425-fix-open-ended-tracking-for-document-end",
+     "subject": "Fix open-ended tracking for document end markers",
+     "tests": [
+      "test/core/ast/presenter.test.mjs"
+     ]
+    },
+    {
+     "sha": "31aad6d71e42d466dadc7c2604ce0785e7af260c",
+     "task": "31aad6d7-fix-simple-key-length-limit-for-astral-c",
+     "subject": "Fix simple key length limit for astral characters",
+     "tests": [
+      "test/core/ast/presenter.test.mjs"
+     ]
+    },
+    {
+     "sha": "7e316d61e27e413e8841b28538c67283299b7938",
+     "task": "7e316d61-keep-long-flow-mapping-keys-implicit",
+     "subject": "Keep long flow mapping keys implicit",
+     "tests": [
+      "test/core/ast/presenter.test.mjs"
+     ]
+    },
+    {
+     "sha": "5b886bd3e4984162235fbc19778542f9fce67796",
+     "task": "5b886bd3-fix-empty-scalar-items-in-flow-sequences",
+     "subject": "Fix empty scalar items in flow sequences",
+     "tests": [
+      "test/core/ast/presenter.test.mjs"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/moment/luxon",
+   "test_cmd": "export TZ=UTC; npx jest {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "f427515a38f6a671f8de663e6bcc040ed81f114e",
+     "task": "f427515a-rewrite-duration-shiftto-and-normalize-t",
+     "subject": "Rewrite Duration#shiftTo and normalize to do less \"unintuitive\" conversions.",
+     "tests": [
+      "test/duration/units.test.js"
+     ]
+    },
+    {
+     "sha": "aeb7427a8d27f9737bf6d93f836296fe964471de",
+     "task": "aeb7427a-fix-interval-respect-endpoint-zones-in-h",
+     "subject": "fix(interval): respect endpoint zones in hasSame for empty intervals (#1790)",
+     "tests": [
+      "test/interval/info.test.js"
+     ]
+    },
+    {
+     "sha": "8a798d11be628373a5f7742391162950e5b222be",
+     "task": "8a798d11-fix-lost-negative-sign-in-duration-tofor",
+     "subject": "Fix lost negative sign in Duration#toFormat when largest unit is zero (#1786)",
+     "tests": [
+      "test/duration/format.test.js"
+     ]
+    },
+    {
+     "sha": "781d962d5e77982ba9c51a587915fd2ffd4b29d4",
+     "task": "781d962d-fix-avoid-exponential-notation-in-durati",
+     "subject": "fix: avoid exponential notation in Duration#toISO (#1784)",
+     "tests": [
+      "test/duration/format.test.js"
+     ]
+    },
+    {
+     "sha": "d249e0eda7180720e741cab1feaebd9234dc196b",
+     "task": "d249e0ed-accept-the-obsolete-ut-zone-in-fromrfc28",
+     "subject": "Accept the obsolete UT zone in fromRFC2822 (#1782)",
+     "tests": [
+      "test/datetime/regexParse.test.js"
+     ]
+    },
+    {
+     "sha": "9ae1ab928bab18dae0b1b788ab6aa870805860dc",
+     "task": "9ae1ab92-fix-mark-fixedoffsetzone-invalid-when-co",
+     "subject": "fix: mark FixedOffsetZone invalid when constructed with a non-numeric offset (#1781)",
+     "tests": [
+      "test/zones/fixedOffset.test.js"
+     ]
+    },
+    {
+     "sha": "9d4f750e45fd1d25a1b60336d06665e16b861d58",
+     "task": "9d4f750e-feat-add-weeksettings-support-to-datetim",
+     "subject": "feat: add weekSettings support to DateTime.reconfigure() (#1756)",
+     "tests": [
+      "test/datetime/reconfigure.test.js"
+     ]
+    },
+    {
+     "sha": "24fdb221a834087c414089b8f4134ee68c3220d8",
+     "task": "24fdb221-implement-fallback-for-quarters-in-durat",
+     "subject": "Implement fallback for \"quarters\" in Duration.toHuman",
+     "tests": [
+      "test/duration/format.test.js"
+     ]
+    },
+    {
+     "sha": "4cc03e5b71240ece26ba1424cabcf35b8a939c56",
+     "task": "4cc03e5b-fix-offset-formatting-in-iso-strings-for",
+     "subject": "Fix offset formatting in ISO strings for format=basic (#1660)",
+     "tests": [
+      "test/datetime/format.test.js"
+     ]
+    },
+    {
+     "sha": "0e0889a99c9a15b2454ce6a0d7f93367a3629a31",
+     "task": "0e0889a9-ianazone-returns-the-canonical-iana-zone",
+     "subject": "IANAZone returns the canonical IANA zone name; Test included in IANA.test.js (#1718)",
+     "tests": [
+      "test/zones/IANA.test.js"
+     ]
+    },
+    {
+     "sha": "4e81ef9e86297244652e3013b58849f5c0828278",
+     "task": "4e81ef9e-implement-signmode-on-duration-toformat",
+     "subject": "Implement \"signMode\" on Duration#toFormat",
+     "tests": [
+      "test/duration/format.test.js"
+     ]
+    },
+    {
+     "sha": "73d3ee9c59a1b38adb4bd9f8b277583e5750fd6f",
+     "task": "73d3ee9c-improve-workaround-for-info-months-and-i",
+     "subject": "Improve workaround for Info.months and Info.monthsFormat for \"ja\" locale",
+     "tests": [
+      "test/info/listers.test.js"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/npm/node-semver",
+   "test_cmd": "export TZ=UTC; npx tap --no-coverage -R terse test # {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "9c8692ae05416e9dbe88d95ffe2b80e6964550fe",
+     "task": "9c8692ae-fix-include-prereleases-in-tilde-range-l",
+     "subject": "fix: include prereleases in tilde range lower bound with includePrerelease (#878)",
+     "tests": [
+      "test/fixtures/range-include.js",
+      "test/fixtures/range-parse.js"
+     ]
+    },
+    {
+     "sha": "e583226b165edd6530502cf731eda334527af6fe",
+     "task": "e583226b-fix-reject-numeric-segments-after-x-rang",
+     "subject": "fix: reject numeric segments after x-ranges",
+     "tests": [
+      "test/fixtures/range-parse.js"
+     ]
+    },
+    {
+     "sha": "046da7f527cc72a482b5dea8cb59392be65bf186",
+     "task": "046da7f5-fix-align-caret-includeprerelease-lower",
+     "subject": "fix: align caret includePrerelease lower bounds (#872)",
+     "tests": [
+      "test/fixtures/range-exclude.js"
+     ]
+    },
+    {
+     "sha": "bea6028694a75e840f48b288ac019e9644cfe6e8",
+     "task": "bea60286-fix-increment-dotted-prerelease-identifi",
+     "subject": "fix: increment dotted prerelease identifiers (#870)",
+     "tests": [
+      "test/fixtures/increments.js"
+     ]
+    },
+    {
+     "sha": "17aa702d91166472b197a2ea768f085083bee2e4",
+     "task": "17aa702d-fix-strip-build-metadata-before-comparat",
+     "subject": "fix: strip build metadata before comparator trimming (#869)",
+     "tests": [
+      "test/fixtures/range-parse.js"
+     ]
+    },
+    {
+     "sha": "5f3ca133e040210b6ea80c350a1d61d9da02e722",
+     "task": "5f3ca133-fix-handle-prerelease-bounds-in-subset-8",
+     "subject": "fix: handle prerelease bounds in subset (#867)",
+     "tests": [
+      "test/ranges/subset.js"
+     ]
+    },
+    {
+     "sha": "3905343045dc293c3694d5e46170b1bb1fb5cf58",
+     "task": "39053430-fix-warn-when-defaulting-to-inc-patch-in",
+     "subject": "fix: Warn when defaulting to --inc=patch in CLI",
+     "tests": [
+      "tap-snapshots/test/bin/semver.js.test.cjs",
+      "test/bin/semver.js"
+     ]
+    },
+    {
+     "sha": "0d0a0a2582fb1486bc6cd255ba18819c441ed149",
+     "task": "0d0a0a25-feat-add-truncate-function-855",
+     "subject": "feat: Add `truncate` function (#855)",
+     "tests": [
+      "test/fixtures/truncations.js",
+      "test/functions/truncate.js"
+     ]
+    },
+    {
+     "sha": "a29faa5f3309a01c8e5aeb965fb5c02c4c4e80e2",
+     "task": "a29faa5f-fix-cli-pass-options-to-semver-valid-for",
+     "subject": "fix(cli): pass options to semver.valid() for loose version validation (#835)",
+     "tests": [
+      "tap-snapshots/test/bin/semver.js.test.cjs",
+      "test/bin/semver.js"
+     ]
+    },
+    {
+     "sha": "2471d7543e2e63d9d95358e2405e7e1cde926c36",
+     "task": "2471d754-fix-x-range-build-metadata-support",
+     "subject": "fix: x-range build metadata support",
+     "tests": [
+      "test/fixtures/range-parse.js"
+     ]
+    },
+    {
+     "sha": "c99f336fa3bdff465652f9041eab2127d2f52eb2",
+     "task": "c99f336f-fix-prerelease-identifier-starting-with",
+     "subject": "fix: prerelease identifier starting with digits (#781)",
+     "tests": [
+      "test/classes/semver.js",
+      "test/fixtures/valid-versions.js",
+      "test/functions/coerce.js"
+     ]
+    },
+    {
+     "sha": "af761c05bd53eef83b5e20f8b09360b0e70557dc",
+     "task": "af761c05-fix-inc-fully-capture-prerelease-identif",
+     "subject": "fix(inc): fully capture prerelease identifier (#764)",
+     "tests": [
+      "test/fixtures/increments.js",
+      "test/internal/re.js"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/pillarjs/path-to-regexp",
+   "test_cmd": "export TZ=UTC; npx vitest run {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "7dd6f8f7bd63ae8bffca0968144508228dc61729",
+     "task": "7dd6f8f7-fix-stringify-name-across-empty-text-tok",
+     "subject": "Fix stringify name across empty text tokens (#456)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "58449883539022c9ac36ea3e9abb0fc7b9d84223",
+     "task": "58449883-remove-internal-tokenization-during-pars",
+     "subject": "Remove internal tokenization during parse (#435)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "9a788793e7eeb0ccf9c53c1cb54d297b5badfcc3",
+     "task": "9a788793-error-on-trailing-backslash-434",
+     "subject": "Error on trailing backslash (#434)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "9df2448fdfca9d2957cf47a1777b5deda9be18cf",
+     "task": "9df2448f-remove-more-bytes-from-parser-401",
+     "subject": "Remove more bytes from parser (#401)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "2a7f2a4e9ba42eee41aa9d7a1a69eddb43b79a61",
+     "task": "2a7f2a4e-add-custom-error-class-398",
+     "subject": "Add custom error class (#398)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "6b7a4525b4d8633b6520987738ba04a732e1d6b2",
+     "task": "6b7a4525-throw-on-unmatched-closing-paren-286",
+     "subject": "Throw on unmatched closing paren (#286)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "17ce0be0662afef63c277b549ba0be0112581510",
+     "task": "17ce0be0-make-key-prefix-suffix-modifier-separato",
+     "subject": "Make key prefix/suffix/modifier/separator optional",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "8b7440438f726cce7a891f9325dd79a65978347f",
+     "task": "8b744043-explicit-prefix-and-suffix-modifiers-306",
+     "subject": "Explicit prefix and suffix modifiers (#306)",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "e796ace0db1938b29d918938c66649d458d76158",
+     "task": "e796ace0-default-encode-decode-allow-disabling",
+     "subject": "Default encode/decode, allow disabling",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "578b0727fe32ddf219faf9ec3d9bb22976dc468a",
+     "task": "578b0727-test-loose-can-be-disabled",
+     "subject": "Test loose can be disabled",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "01086a0ebd6ccfc995116df3e54bfb7d03381c74",
+     "task": "01086a0e-add-wildcard-functionality",
+     "subject": "Add wildcard functionality",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    },
+    {
+     "sha": "db3beffd99c176c7b16b5b55d7fa0c1c09dec365",
+     "task": "db3beffd-remove-support-for-regexp-and-arrays",
+     "subject": "Remove support for regexp and arrays",
+     "tests": [
+      "src/index.spec.ts"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/ljharb/qs",
+   "test_cmd": "export TZ=UTC; npx tape {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "d219359f5bedc42815190b2448160fae06b7817c",
+     "task": "d219359f-fix-parse-do-not-mutate-an-object-input",
+     "subject": "[Fix] `parse`: do not mutate an object input",
+     "tests": [
+      "test/parse.js"
+     ]
+    },
+    {
+     "sha": "98157dc1b770240ed4fb91da0faa3fb404b80474",
+     "task": "98157dc1-fix-stringify-stop-re-encoding-structura",
+     "subject": "[Fix] `stringify`: stop re-encoding structural separator dots when `encodeDotInKeys` is set",
+     "tests": [
+      "test/stringify.js"
+     ]
+    },
+    {
+     "sha": "cb075c5c4410c36f3cefc1f11b014537c5bb9558",
+     "task": "cb075c5c-fix-stringify-arrayformat-comma-pass-the",
+     "subject": "[Fix] `stringify`: `arrayFormat: 'comma'`: pass the full encoder arguments with `encodeValuesOnly`",
+     "tests": [
+      "test/stringify.js"
+     ]
+    },
+    {
+     "sha": "4b89c03f58d61b06636f37b8a1544d4273364620",
+     "task": "4b89c03f-fix-utils-encode-as-2b-in-iso-8859-1-mod",
+     "subject": "[Fix] `utils`: encode `+` as `%2B` in iso-8859-1 mode so values round-trip",
+     "tests": [
+      "test/stringify.js"
+     ]
+    },
+    {
+     "sha": "7d68447dc984d1a0a91eae6a4022aafefdb194f2",
+     "task": "7d68447d-fix-parse-only-convert-top-level-dots-to",
+     "subject": "[Fix] parse: only convert top-level dots to brackets when allowDots is on",
+     "tests": [
+      "test/parse.js"
+     ]
+    },
+    {
+     "sha": "6557b969dc77b461a76c591b7605a7057304c370",
+     "task": "6557b969-fix-stringify-ignore-inherited-array-for",
+     "subject": "[Fix] `stringify`: ignore inherited array format names",
+     "tests": [
+      "test/stringify.js"
+     ]
+    },
+    {
+     "sha": "a952e7519338ef0cfb25694a2988848f93333727",
+     "task": "a952e751-fix-stringify-arrayformat-comma-do-not-t",
+     "subject": "[Fix] `stringify`: `arrayFormat: 'comma'`: do not throw on elements with no callable `toString`",
+     "tests": [
+      "test/stringify.js"
+     ]
+    },
+    {
+     "sha": "0d415f34f8c6d16cec1497d16538f47152b92da2",
+     "task": "0d415f34-fix-utils-merge-seed-an-overflow-contain",
+     "subject": "[Fix] `utils`: `merge`: seed an overflow container's index from its own keys, not just the source",
+     "tests": [
+      "test/parse.js",
+      "test/utils.js"
+     ]
+    },
+    {
+     "sha": "4a310b47a5e80d1d202406b6d10c9dabbda29357",
+     "task": "4a310b47-robustness-utils-merge-apply-arraylimit",
+     "subject": "[Robustness] `utils`: `merge`: apply `arrayLimit` to the two-element array built for colliding values",
+     "tests": [
+      "test/parse.js",
+      "test/utils.js"
+     ]
+    },
+    {
+     "sha": "fc373c91152bff8719746e8287b7ee78ccb48d5d",
+     "task": "fc373c91-fix-utils-merge-keep-a-strictmerge-confl",
+     "subject": "[Fix] `utils`: `merge`: keep a `strictMerge` conflict container's index and `arrayLimit` correct",
+     "tests": [
+      "test/parse.js",
+      "test/utils.js"
+     ]
+    },
+    {
+     "sha": "25257d943744d3288b7abe54912599d4dc0dc53c",
+     "task": "25257d94-fix-parse-only-treat-as-array-syntax-whe",
+     "subject": "[Fix] `parse`: only treat `[]` as array syntax when it ends the key",
+     "tests": [
+      "test/parse.js"
+     ]
+    },
+    {
+     "sha": "72e998d228a5ec91c66c6ccfaa00843a219582b6",
+     "task": "72e998d2-robustness-parse-bound-the-nesting-added",
+     "subject": "[Robustness] `parse`: bound the nesting added by repeated `strictMerge` conflicts",
+     "tests": [
+      "test/utils.js"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/validatorjs/validator.js",
+   "test_cmd": "export TZ=UTC; npm run build >/dev/null 2>&1 && npx mocha --require @babel/register --reporter dot {tests}",
+   "setup": "npm install --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null 2>&1 || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps --loglevel=error",
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "a79ff980ab14257e795332989e497bdff3218e87",
+     "task": "a79ff980-fix-isvat-accept-spanish-digit-controls",
+     "subject": "fix(isVAT): accept Spanish digit controls (#2849)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "cdb7dafc281d14125b924969bf3ee5bc482ec169",
+     "task": "cdb7dafc-fix-index-export-the-real-tostring-imple",
+     "subject": "fix(index): export the real toString implementation (#2839)",
+     "tests": [
+      "test/exports.test.js",
+      "test/sanitizers.test.js"
+     ]
+    },
+    {
+     "sha": "65a070c93e1c19d0075301ace47345bffc273207",
+     "task": "65a070c9-feat-istaxid-add-en-in-pan-support-rebas",
+     "subject": "feat(isTaxID): add en-IN (PAN) support, rebase of #2032 by @ajinkyac03 (#2835)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "b18bde8b7fda9d0150346b31460875606471e61d",
+     "task": "b18bde8b-fix-isvat-reject-stray-comma-in-do-and-v",
+     "subject": "fix(isVAT): reject stray comma in DO and VE VAT numbers (#2814)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "ae1323ba55df25fea3b55b058ad6ac7cba37e571",
+     "task": "ae1323ba-fix-istaxid-reduce-pl-pl-and-lv-lv-check",
+     "subject": "fix(isTaxID): reduce pl-PL and lv-LV check digit modulo 10 (#2827)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "0b9654ac9f377170716f1179d9234eca262882bb",
+     "task": "0b9654ac-feat-postalcode-postal-code-validator-fo",
+     "subject": "feat(postalCode): postal code validator for Argentina (#2750)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "7d42ed2dcffc229ae7aaab87f77f612d04850096",
+     "task": "7d42ed2d-fix-isbytelength-handle-unpaired-utf-16",
+     "subject": "fix(isByteLength): handle unpaired UTF-16 surrogates (#2822)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "d563b1584cedb66a7ebea75e5ba8d8a8babc86a8",
+     "task": "d563b158-fix-isrgbcolor-allow-longer-alpha-decima",
+     "subject": "fix(isRgbColor): allow longer alpha decimal precision (#2825)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "1d8c299ed5468366b6c1f61831494f26713780e5",
+     "task": "1d8c299e-feat-postalcode-add-postal-code-for-jord",
+     "subject": "feat(postalCode): add postal code for Jordan (#2756)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "a38f15be6931722d295d2c7ad1d13d35036078a5",
+     "task": "a38f15be-fix-isiso8601-rejecting-valid-ordinal-da",
+     "subject": "Fix isISO8601 rejecting valid ordinal day 360 (#2787)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "3d2f4b336bf68feebf4d0d634ef11d84a69e7b9f",
+     "task": "3d2f4b33-fix-isiso8601-reject-week-zero-dates-w00",
+     "subject": "fix(isISO8601): reject week-zero dates (W00 is never a valid ISO 8601 week) (#2774)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    },
+    {
+     "sha": "7fdc788ebd1ad79ca6d9edabb884eaaa1c51e36c",
+     "task": "7fdc788e-feat-ismobilephone-add-en-cm-alias-for-c",
+     "subject": "feat(isMobilePhone): add (en-CM) alias for Cameroon (fr-CM) mobile phone validation (#2701)",
+     "tests": [
+      "test/validators.test.js"
+     ]
+    }
+   ]
+  }
+ ]
+}

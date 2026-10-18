@@ -196,9 +196,14 @@ A commit that changed code and its tests becomes a task:
 
 On python-slugify this found six tasks.
 
-## Real-world benchmarks: Python and Go
+## Real-world benchmarks: Python, Go and JavaScript
 
-There are two benchmarks: `benchmarks/realworld-v1.json` (Python) and `benchmarks/realworld-go-v1.json` (Go), 155 tasks in all.
+There are three benchmarks, 251 tasks in all:
+- `benchmarks/realworld-v1.json`: Python, 71 tasks
+- `benchmarks/realworld-go-v1.json`: Go, 84 tasks
+- `benchmarks/realworld-js-v1.json`: JavaScript/TypeScript, 96 tasks
+
+A weekly workflow rebuilds every task from GitHub and re-validates it.
 
 ### Python: 71 tasks from seven libraries
 
@@ -249,6 +254,31 @@ openagent bench benchmarks/realworld-go-v1.json --preset baseline --preset opena
 ```
 
 Make your own the same way: `openagent tasks from-git` on your repositories, then `openagent tasks export ... -o mine.json`.
+
+### JavaScript: 96 tasks from eight libraries
+
+| Library | Tasks | Graded with | Visible check |
+|---|---|---|---|
+| tj/commander.js | 12 | jest | kept |
+| iamkun/dayjs | 12 | jest | kept |
+| nodeca/js-yaml | 12 | node --test (after its build) | kept |
+| ljharb/qs | 12 | tape | kept |
+| validatorjs/validator.js | 12 | mocha (after its build) | kept |
+| moment/luxon | 12 | jest | dropped: its suite expects a New York timezone |
+| npm/node-semver | 12 | tap | dropped on 11: two assertions already fail on the starting code |
+| pillarjs/path-to-regexp | 12 | vitest | dropped: with no files named, vitest finds none |
+
+Each task's setup is `npm install --ignore-scripts` (retried with `--legacy-peer-deps` for old peer ranges),
+so the agent starts with the project's own toolchain in `node_modules`. Mining these took per-project test
+commands, and each one is recorded in the manifest:
+- Projects that test their build output (js-yaml, validator.js) run the build first, so the agent's source edits are what gets tested.
+- node-semver's commits change test fixtures, which are not test files of their own, so it runs the whole tap suite.
+- Every command pins `TZ=UTC`, so the date libraries grade the same on every machine.
+
+```bash
+openagent bench benchmarks/realworld-js-v1.json --preset baseline --preset openagent -m anthropic/claude-sonnet-5-5 \
+  -j 8 --sandbox docker --agentdiff -o results-js/
+```
 
 ## The Docker sandbox: `--sandbox docker`
 

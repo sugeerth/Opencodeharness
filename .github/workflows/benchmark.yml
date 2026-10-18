@@ -1,7 +1,7 @@
-name: Validate the real-world benchmark
-# Rebuilds every task in benchmarks/realworld-v1.json from GitHub and re-checks that each commit's
-# tests fail on its parent and pass on the commit, so a broken task is caught before anyone pays for
-# a model run on it.
+name: Validate the real-world benchmarks
+# Rebuilds every task of the Python, Go and JavaScript benchmarks from GitHub and re-checks that each
+# commit's tests fail on its parent and pass on the commit, so a broken task is caught before anyone
+# pays for a model run on it. One job per repository, in parallel.
 on:
   schedule:
     - cron: "17 6 * * 1"
@@ -9,13 +9,37 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {manifest: realworld-v1, repo: ""}
+          - {manifest: realworld-go-v1, repo: ""}
+          - {manifest: realworld-js-v1, repo: /commander.js}
+          - {manifest: realworld-js-v1, repo: /dayjs}
+          - {manifest: realworld-js-v1, repo: /js-yaml}
+          - {manifest: realworld-js-v1, repo: /luxon}
+          - {manifest: realworld-js-v1, repo: /node-semver}
+          - {manifest: realworld-js-v1, repo: /path-to-regexp}
+          - {manifest: realworld-js-v1, repo: /qs}
+          - {manifest: realworld-js-v1, repo: /validator.js}
+    name: ${{ matrix.manifest }}${{ matrix.repo }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - run: pip install -e '.[dev]' freezegun hypothesis
       - name: Fetch and validate every task
+        env:
+          MANIFEST: benchmarks/${{ matrix.manifest }}.json
+          ONLY: ${{ matrix.repo }}
         run: |
-          openagent tasks fetch benchmarks/realworld-v1.json -o tasks --timeout 300
-          python -c "import json, sys; r = json.load(open('tasks/fetch.json')); print(len(r['written']), 'written;', len(r['failed']), 'failed'); [print(' ', f) for f in r['failed']]; sys.exit(1 if r['failed'] else 0)"
+          openagent tasks fetch "$MANIFEST" -o tasks --timeout 300 ${ONLY:+--only "$ONLY"}
+          python -c "import json, sys; r = json.load(open('tasks/fetch.json')); print(len(r['written']), 'written;', len(r['failed']), 'failed'); [print(' ', f) for f in r['failed']]; sys.exit(1 if r['failed'] or not r['written'] else 0)"
