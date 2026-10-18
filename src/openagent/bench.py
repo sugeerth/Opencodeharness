@@ -11,6 +11,7 @@ import math
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -61,15 +62,51 @@ def run_one(task: Task, strategy: Strategy, oc: OpenCode, repeat: int = 0, log: 
     return rec
 
 
+def run_key(task: str, strategy: str, repeat: int) -> str:
+    return f"{task}\t{strategy}\t{repeat}"
+
+
+def load_runs(path: Path) -> dict[str, dict]:
+    """Finished runs from a runs.jsonl log, keyed by task/strategy/repeat. A torn last line (the process
+    was killed mid-write) is ignored."""
+    done: dict[str, dict] = {}
+    if path.is_file():
+        for line in path.read_text().splitlines():
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            done[run_key(r["task"], r["strategy"], r.get("repeat", 0))] = r
+    return done
+
+
 def run_bench(tasks: list[Task], strategies: list[Strategy], oc: OpenCode, repeat: int = 1, jobs: int = 1,
               log: Log = lambda _: None, traces_dir: str | Path | None = None,
-              synthetic: str | None = None) -> list[dict]:
+              synthetic: str | None = None, shard: tuple[int, int] = (1, 1),
+              runs_log: str | Path | None = None) -> list[dict]:
+    """Run every task x strategy x repeat. With `runs_log`, each finished run is appended to that JSONL
+    file and runs already in it are not run again, so an interrupted benchmark resumes where it
+    stopped. `shard=(i, n)` runs only every n-th job starting at the i-th, so n machines can split a
+    suite and `merge_runs` can put the pieces together."""
     jobs_list = [(t, s, r) for r in range(repeat) for s in strategies for t in tasks]
+    i, n = shard
+    jobs_list = [job for k, job in enumerate(jobs_list) if k % n == i - 1]
     tdir = Path(traces_dir) if traces_dir else None
+    log_path = Path(runs_log) if runs_log else None
+    done = load_runs(log_path) if log_path else {}
+    lock = threading.Lock()
+    if done:
+        log(f"resuming: {sum(run_key(t.name, s.name, r) in done for t, s, r in jobs_list)} of {len(jobs_list)} run(s) already done")
 
     def go(job):
         t, s, r = job
+        prev = done.get(run_key(t.name, s.name, r))
+        if prev is not None:
+            return prev
         rec = run_one(t, s, oc, r, log, tdir, synthetic)
+        if log_path:
+            with lock, open(log_path, "a") as f:
+                f.write(json.dumps(rec) + "\n")
         extra = ""
         if "stats" in rec:
             extra = f"  ${rec['stats']['cost']:.4f} {rec['seconds']:.0f}s {rec.get('stop', '')}"
@@ -273,3 +310,17 @@ def write_reports(results: list[dict], out_dir: str | Path, meta: dict,
                               "agentdiff": agentdiff or [], "results": results}, indent=2))
     md.write_text(markdown_report(results, meta, agentdiff))
     return js, md
+
+
+def merge_runs(dirs: list[str | Path], out_dir: str | Path) -> list[dict]:
+    """Combine the runs.jsonl logs and traces of several benchmark outputs (shards, or resumed pieces)."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    merged: dict[str, dict] = {}
+    for d in map(Path, dirs):
+        merged.update(load_runs(d / "runs.jsonl"))
+        if (d / "traces").is_dir():
+            shutil.copytree(d / "traces", out / "traces", dirs_exist_ok=True)
+    results = sorted(merged.values(), key=lambda r: (r.get("repeat", 0), r["strategy"], r["task"]))
+    (out / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in results))
+    return results

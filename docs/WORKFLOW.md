@@ -250,6 +250,25 @@ alone decide. That is the honest setting for measuring an agent, and it is where
 commit's tests in the workspace as the check instead (protected), which measures how well the
 repair loop drives a failing test to green.
 
+### At scale: a real-world benchmark
+
+`benchmarks/realworld-v1.json` is 71 such tasks from seven libraries (boltons, more-itertools,
+python-semver, tomli, inflection, itsdangerous, toolz), mined with `tasks from-git` and written out
+with `tasks export`. It is a 24 KB manifest, not 71 copies of repositories. `openagent bench
+benchmarks/realworld-v1.json ...` fetches the tasks from GitHub on first use and re-validates every one.
+All 71 rebuilt and re-validated from scratch here, and a weekly workflow repeats that check.
+
+Building it exposed a flaw worth knowing about. On 32 of the 71 tasks, the visible check (the project's
+remaining suite) failed on the untouched starting code. Either the held-out file had been the only test
+file, or old tests don't run on a current Python. A repair loop pointed at such a check chases failures
+the agent didn't cause, so task building now runs the visible check on the starting code and drops it,
+with the reason recorded, when it doesn't pass.
+
+To run it at scale:
+- **Resume:** finished runs go to `runs.jsonl`, and `--resume` skips them.
+- **Split:** `--shard I/N` splits the suite across machines, and `openagent merge` writes one report from the pieces.
+- **Share a server:** `--server auto` attaches every run to one `opencode serve`. That took the demo from 90 s to 69 s with identical results.
+
 ## 9. All of it in a browser: `openagent ui`
 
 Every step above is also in the local front end. From one page you can:

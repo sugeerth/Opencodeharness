@@ -814,7 +814,7 @@ def test_from_git_drops_old_versions_of_modified_tests_and_handles_unicode(tmp_p
     w = tmp_path / "w"
     shutil.copytree(task.files, w)
     (w / "m.py").write_text("def f():\n    return 2\n")                 # the correct change
-    assert run_check(task.check, w).exit_code in (0, 5)                 # visible check doesn't fight it
+    assert task.check is None                                           # nothing left to run: no check to fight it
     assert run_check(task.grade, w).passed
 
 
@@ -828,3 +828,102 @@ def test_sim_prefers_the_most_specific_playbook(tmp_path):
     from openagent.sim import Playbook, Policy
     a, b = Playbook("Fix it", [{"say": "a"}]), Playbook("Fix it properly", [{"say": "b"}])
     assert Policy([a, b]).find(["Task:\nFix it properly"]) is b
+
+
+# --- v0.6: scale -----------------------------------------------------------------------------------
+
+def test_bench_resumes_from_runs_log(fake, tmp_path):
+    tasks = [Task(f"t{i}", "x", check=CHECK) for i in range(3)]
+    log = tmp_path / "runs.jsonl"
+    first = run_bench(tasks, [PRESETS["openagent"]], fake("good"), runs_log=log)
+    calls = len(fake.calls())
+    log.write_text(log.read_text() + '{"task": "torn')            # killed mid-write
+    again = run_bench(tasks, [PRESETS["openagent"]], fake("good"), runs_log=log)
+    assert len(fake.calls()) == calls and [r["task"] for r in again] == [r["task"] for r in first]
+
+
+def test_shards_partition_the_jobs_and_merge_back(fake, tmp_path):
+    from openagent.bench import merge_runs
+    tasks = [Task(f"t{i}", "x", check=CHECK) for i in range(5)]
+    seen = []
+    for i in (1, 2):
+        out = tmp_path / f"s{i}"
+        out.mkdir()
+        rs = run_bench(tasks, [PRESETS["baseline"], PRESETS["openagent"]], fake("good"), shard=(i, 2),
+                       runs_log=out / "runs.jsonl", traces_dir=out / "traces")
+        seen += [(r["task"], r["strategy"]) for r in rs]
+    assert len(seen) == 10 and len(set(seen)) == 10
+    merged = merge_runs([tmp_path / "s1", tmp_path / "s2"], tmp_path / "m")
+    assert len(merged) == 10 and len(list((tmp_path / "m" / "traces").rglob("*.json"))) == 10
+
+
+def test_cli_merge_writes_one_report(fake, tmp_path):
+    oc = fake("good")
+    for i in (1, 2):
+        main(["bench", str(EXAMPLES), "--only", "hello", "--only", "fix-average", "--binary", oc.binary,
+              "--shard", f"{i}/2", "-o", str(tmp_path / f"s{i}")])
+    assert main(["merge", str(tmp_path / "s1"), str(tmp_path / "s2"), "-o", str(tmp_path / "m")]) == 0
+    res = json.loads((tmp_path / "m" / "results.json").read_text())
+    assert len(res["results"]) == 4 and {r["runs"] for r in res["summary"]} == {2}
+
+
+def test_attach_command_names_the_workspace(tmp_path):
+    cmd = OpenCode(attach="http://127.0.0.1:4096").command("go", None, tmp_path)
+    assert cmd[cmd.index("--attach") + 1] == "http://127.0.0.1:4096"
+    assert cmd[cmd.index("--dir") + 1] == str(tmp_path.resolve()) and cmd[-1] == "go"
+    assert "--attach" not in OpenCode().command("go", None, tmp_path)
+
+
+def test_manifest_export_and_fetch_round_trip(tmp_path):
+    from openagent.gittasks import build, export_manifest, fetch
+    repo = _git_repo(tmp_path)
+    build(repo, tmp_path / "mined", TEST_CMD)
+    m = export_manifest([tmp_path / "mined"], "tiny")
+    assert m["tasks"] == 1 and m["repos"][0]["url"] == str(repo)
+    report = fetch(m, tmp_path / "fetched")
+    assert len(report["written"]) == 1 and report["failed"] == []
+    (task,) = discover(tmp_path / "fetched")
+    assert "Add sub()" in task.prompt and task.grade and not (task.files / "tests" / "test_sub.py").exists()
+    m["repos"][0]["tasks"].append({"sha": "0" * 40, "task": "ghost", "subject": "x", "tests": []})
+    report = fetch(m, tmp_path / "fetched2")
+    assert [f["task"] for f in report["failed"]] == ["ghost"]
+
+
+def test_realworld_manifest_is_well_formed():
+    import re
+    m = json.loads((Path(__file__).parents[1] / "benchmarks" / "realworld-v1.json").read_text())
+    tasks = [t for r in m["repos"] for t in r["tasks"]]
+    assert m["format"] == "openagent-manifest/1" and m["tasks"] == len(tasks) >= 50
+    assert len({t["task"] for t in tasks}) == len(tasks)
+    assert all(re.fullmatch(r"[0-9a-f]{40}", t["sha"]) and t["tests"] for t in tasks)
+    assert all(r["url"].startswith("https://github.com/") and "{tests}" in r["test_cmd"] for r in m["repos"])
+
+
+def test_bench_accepts_a_manifest(fake, tmp_path):
+    from openagent.gittasks import build, export_manifest
+    build(_git_repo(tmp_path), tmp_path / "mined", TEST_CMD)
+    (tmp_path / "m.json").write_text(json.dumps(export_manifest([tmp_path / "mined"])))
+    oc = fake("good")
+    assert main(["bench", str(tmp_path / "m.json"), "--binary", oc.binary, "-o", str(tmp_path / "out")]) == 0
+    res = json.loads((tmp_path / "out" / "results.json").read_text())
+    assert res["meta"]["tasks"] == 1 and (tmp_path / "out" / "tasks" / "fetch.json").is_file()
+    assert all(r["graded"] is False for r in res["results"])   # the fake never adds sub(); the hidden tests say so
+
+
+def test_from_git_drops_a_visible_check_that_fails_from_the_start(tmp_path):
+    import subprocess
+    from openagent.gittasks import build
+    r = tmp_path / "repo"
+    r.mkdir()
+    g = lambda *a: subprocess.run(["git", "-C", str(r), *a], check=True, capture_output=True)  # noqa: E731
+    g("init", "-q"); g("config", "user.email", "t@e.com"); g("config", "user.name", "t")
+    (r / "m.py").write_text("def f():\n    return 1\n")
+    (r / "test_m.py").write_text("from m import f\n\ndef test_f():\n    assert f() == 1\n")
+    g("add", "-A"); g("commit", "-qm", "init")
+    (r / "m.py").write_text("def f():\n    return 2\n")
+    (r / "test_m.py").write_text("from m import f\n\ndef test_f():\n    assert f() == 2\n")
+    g("add", "-A"); g("commit", "-qm", "f returns 2")
+    build(r, tmp_path / "tasks", TEST_CMD)       # the only test file is held out: nothing left to run
+    (task,) = discover(tmp_path / "tasks")
+    cfg = json.loads((tmp_path / "tasks" / task.name / "task.json").read_text())
+    assert task.check is None and "exit 5" in cfg["check_dropped"] and task.grade

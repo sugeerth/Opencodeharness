@@ -48,6 +48,7 @@ class OpenCode:
     extra_args: list[str] = field(default_factory=list)
     timeout: int = 900
     env: dict[str, str] | None = None
+    attach: str | None = None         # URL of a running `opencode serve` to reuse instead of a cold start
 
     def __post_init__(self):
         # OpenCode runs inside each workspace, so a relative path like ./bin/opencode must be resolved
@@ -55,8 +56,11 @@ class OpenCode:
         if os.sep in self.binary and not os.path.isabs(self.binary):
             self.binary = os.path.abspath(self.binary)
 
-    def command(self, prompt: str, session: str | None = None) -> list[str]:
+    def command(self, prompt: str, session: str | None = None, cwd: str | Path | None = None) -> list[str]:
         cmd = [self.binary, "run", "--format", "json"]
+        if self.attach:
+            # with a shared server the workspace has to be named; there is no process cwd to inherit
+            cmd += ["--attach", self.attach] + (["--dir", str(Path(cwd).resolve())] if cwd else [])
         if self.auto:
             cmd.append("--auto")
         if self.model:
@@ -73,7 +77,7 @@ class OpenCode:
         # OpenCode takes its project directory from $PWD, which Popen's cwd= does not update.
         env = {**os.environ, **(self.env or {}), "PWD": str(Path(cwd).resolve())}
         try:
-            proc = subprocess.Popen(self.command(prompt, session), cwd=cwd, env=env, text=True,
+            proc = subprocess.Popen(self.command(prompt, session, cwd), cwd=cwd, env=env, text=True,
                                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, start_new_session=True)
         except FileNotFoundError:
@@ -120,3 +124,36 @@ def _kill_group(proc: subprocess.Popen, grace: float = 5.0) -> tuple[str, str]:
                 pass
         proc.wait()
         return "", ""
+
+
+class SharedServer:
+    """`with SharedServer(oc) as url:` runs one `opencode serve` for many runs to attach to, which saves
+    OpenCode's start-up on every run (about a second each, measured against the scripted model)."""
+
+    def __init__(self, oc: "OpenCode", wait: float = 60.0):
+        self.oc, self.wait, self.proc, self.url = oc, wait, None, None
+
+    def __enter__(self) -> str:
+        import re
+        import threading
+        env = {**os.environ, **(self.oc.env or {})}
+        self.proc = subprocess.Popen([self.oc.binary, "serve", "--port", "0", "--print-logs"], env=env, text=True,
+                                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                     start_new_session=True)
+        found = threading.Event()
+
+        def read():
+            for line in self.proc.stdout:  # keep draining so the server never blocks on a full pipe
+                m = re.search(r"(https?://[\w.\[\]:-]+)", line)
+                if m and not found.is_set() and "listening" in line.lower():
+                    self.url = m.group(1)
+                    found.set()
+        threading.Thread(target=read, daemon=True).start()
+        if not found.wait(self.wait):
+            self.__exit__()
+            raise RuntimeError("`opencode serve` did not report a listening address")
+        return self.url
+
+    def __exit__(self, *exc):
+        if self.proc and self.proc.poll() is None:
+            _kill_group(self.proc, grace=3)

@@ -35,6 +35,7 @@ from ..verify import CACHE_DIRS
 
 PAGE = Path(__file__).with_name("index.html")
 EXAMPLES = Path(__file__).resolve().parents[3] / "examples" / "tasks"
+REALWORLD = Path(__file__).resolve().parents[3] / "benchmarks" / "realworld-v1.json"
 MAX_DIFF = 400_000
 FAVICON = (b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" '
            b'fill="#0f6e5f"/><path d="M11 9l12 7-12 7z" fill="#fff"/></svg>')
@@ -179,7 +180,8 @@ def run_job(j: Job, p: dict, store: Store) -> None:
 
 
 def bench_job(j: Job, p: dict, store: Store, scripted: bool = False) -> None:
-    tasks_dir = Path(p.get("tasks") or EXAMPLES).expanduser().resolve()
+    from ..tasks import resolve
+    tasks_dir = resolve(Path(p.get("tasks") or EXAMPLES).expanduser().resolve(), j.dir / "tasks", j.say)
     tasks = discover(tasks_dir)
     only = [x.strip() for x in (p.get("only") or "").split(",") if x.strip()]
     if only:
@@ -309,6 +311,7 @@ def make_handler(store: Store, token: str):
                     return self._json({"version": __version__, "opencode": shutil.which("opencode"),
                                        "agentdiff": shutil.which("agentdiff"), "examples": str(EXAMPLES),
                                        "examples_exist": EXAMPLES.is_dir(), "presets": list(PRESETS),
+                                       "realworld": str(REALWORLD) if REALWORLD.is_file() else None,
                                        "home": str(store.home), "cwd": os.getcwd()})
                 if parts == ["api", "jobs"]:
                     return self._json([j.meta() for j in sorted(store.jobs.values(), key=lambda j: -j.created)])

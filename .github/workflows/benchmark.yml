@@ -1,0 +1,21 @@
+name: Validate the real-world benchmark
+# Rebuilds every task in benchmarks/realworld-v1.json from GitHub and re-checks that each commit's
+# tests fail on its parent and pass on the commit, so a broken task is caught before anyone pays for
+# a model run on it.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e '.[dev]' freezegun hypothesis
+      - name: Fetch and validate every task
+        run: |
+          openagent tasks fetch benchmarks/realworld-v1.json -o tasks --timeout 300
+          python -c "import json, sys; r = json.load(open('tasks/fetch.json')); print(len(r['written']), 'written;', len(r['failed']), 'failed'); [print(' ', f) for f in r['failed']]; sys.exit(1 if r['failed'] else 0)"

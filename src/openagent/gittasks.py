@@ -52,6 +52,28 @@ def is_test(path: str) -> bool:
     return bool(TEST_FILE.search(path))
 
 
+def origin_url(repo: Path) -> str:
+    try:
+        return git(repo, "remote", "get-url", "origin").strip()
+    except subprocess.CalledProcessError:
+        return ""
+
+
+def candidate_for(repo: Path, sha: str) -> dict | None:
+    """One commit as a candidate, by its hash: what `candidates` would have produced for it."""
+    parents = git(repo, "log", "-1", "--format=%P", sha).split()
+    if len(parents) != 1:
+        return None
+    changed = name_status(repo, sha)
+    tests = [p for st, p in changed if is_test(p) and st in ("A", "M")]
+    code = [p for st, p in changed if not is_test(p) and not NOT_CODE.search(p)]
+    if not tests or not code:
+        return None
+    message = TRAILER.sub("", git(repo, "log", "-1", "--format=%B", sha)).strip()
+    return {"sha": git(repo, "rev-parse", sha).strip(), "parent": parents[0], "tests": tests, "code": code,
+            "message": message}
+
+
 def candidates(repo: Path, look: int = 200, most_files: int = 15, branch: str = "HEAD") -> list[dict]:
     """Commits, newest first, with one parent, that added or changed at least one test file and changed at
     least one other source file, touching no more than `most_files` files."""
@@ -134,8 +156,8 @@ def build(repo: str | Path, out_dir: str | Path, test_cmd: str = "python3 -m pyt
             log(f"cloning {repo}")
             repo_path = Path(tmp) / "repo"
             subprocess.run(["git", "clone", "--quiet", "--no-checkout", str(repo), str(repo_path)], check=True)
-        report = {"repo": str(repo), "test_cmd": test_cmd, "reveal_tests": reveal, "setup": setup,
-                  "taken": [], "skipped": []}
+        report = {"repo": str(repo), "url": origin_url(repo_path) or str(repo), "test_cmd": test_cmd,
+                  "reveal_tests": reveal, "setup": setup, "taken": [], "skipped": []}
         for c in candidates(repo_path, look, branch=branch):
             if len(report["taken"]) >= max_tasks:
                 break
@@ -147,7 +169,7 @@ def build(repo: str | Path, out_dir: str | Path, test_cmd: str = "python3 -m pyt
                 report["skipped"].append({"sha": c["sha"], "subject": subject, "why": verdict})
                 log(f"skip {c['sha'][:8]} {subject[:60]}: {verdict}")
                 continue
-            write_task(repo_path, c, out / name, test_cmd, grade_cmd, reveal, setup)
+            write_task(repo_path, c, out / name, test_cmd, grade_cmd, reveal, setup, timeout)
             report["taken"].append({"sha": c["sha"], "task": name, "subject": subject, "tests": c["tests"]})
             log(f"task {name}")
     (out / "from-git.json").write_text(json.dumps(report, indent=2))
@@ -183,7 +205,26 @@ def validate(repo: Path, c: dict, grade_cmd: str, setup: str | None, timeout: in
     return ""
 
 
-def write_task(repo: Path, c: dict, d: Path, test_cmd: str, grade_cmd: str, reveal: bool, setup: str | None) -> None:
+def visible_check_works(files: Path, check: str, setup: str | None, timeout: int) -> str:
+    """Empty if the visible check passes on the untouched starting tree; else why not. A check that
+    already fails there (no tests left once the commit's are held out, or old tests that don't run in
+    this environment) would only send the repair loop after failures the agent didn't cause."""
+    with tempfile.TemporaryDirectory(prefix="openagent-visible-") as tmp:
+        w = Path(tmp) / "w"
+        shutil.copytree(files, w, symlinks=True)
+        if setup:
+            code, outp = _run(setup, w, timeout)
+            if code != 0:
+                return f"setup failed: {outp.strip()[-160:]}"
+        code, outp = _run(check, w, timeout)
+    if code == 0:
+        return ""
+    tail = outp.strip().splitlines()[-1] if outp.strip() else ""
+    return f"the project's test command fails on the untouched starting code (exit {code}: {tail[:120]})"
+
+
+def write_task(repo: Path, c: dict, d: Path, test_cmd: str, grade_cmd: str, reveal: bool, setup: str | None,
+               timeout: int = 600) -> None:
     if d.exists():
         shutil.rmtree(d)
     export(repo, c["parent"], d / "files")
@@ -206,7 +247,66 @@ def write_task(repo: Path, c: dict, d: Path, test_cmd: str, grade_cmd: str, reve
     if reveal:
         cfg.update(check=grade_cmd, protect=list(c["tests"]))
     else:
-        cfg.update(check=test_cmd.replace("{tests}", "").strip(), grade=f"cp -r {{task}}/grade/. . && {grade_cmd}")
+        check = test_cmd.replace("{tests}", "").strip()
+        why = visible_check_works(d / "files", check, setup, timeout)
+        if why:  # the hidden tests alone decide; the task runs without repair against a broken check
+            cfg.update(grade=f"cp -r {{task}}/grade/. . && {grade_cmd}", check_dropped=why)
+        else:
+            cfg.update(check=check, grade=f"cp -r {{task}}/grade/. . && {grade_cmd}")
     if setup:
         cfg["setup"] = setup
     (d / "task.json").write_text(json.dumps(cfg, indent=2) + "\n")
+
+
+# ---- manifests: a benchmark as a small file, rebuilt from the repositories on demand --------------
+
+def export_manifest(dirs: list[str | Path], name: str = "benchmark") -> dict:
+    """A manifest from the from-git.json of each task directory `tasks from-git` wrote."""
+    repos = []
+    for d in map(Path, dirs):
+        r = json.loads((d / "from-git.json").read_text())
+        if not r["taken"]:
+            continue
+        repos.append({"url": r.get("url") or r["repo"], "test_cmd": r["test_cmd"], "setup": r.get("setup"),
+                      "reveal_tests": r.get("reveal_tests", False),
+                      "tasks": [{"sha": t["sha"], "task": t["task"], "subject": t["subject"], "tests": t["tests"]}
+                                for t in r["taken"]]})
+    return {"name": name, "format": "openagent-manifest/1",
+            "tasks": sum(len(r["tasks"]) for r in repos), "repos": repos}
+
+
+def fetch(manifest: dict, out_dir: str | Path, validate_tasks: bool = True, timeout: int = 600,
+          only: list[str] | None = None, log: Log = lambda _: None) -> dict:
+    """Rebuild a manifest's tasks: clone each repository once, then write every listed commit as a task,
+    re-validating it (its tests fail on the parent and pass on the commit) unless told not to."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    report = {"manifest": manifest.get("name"), "written": [], "failed": []}
+    with tempfile.TemporaryDirectory(prefix="openagent-fetch-") as tmp:
+        for i, r in enumerate(manifest["repos"]):
+            if only and not any(o in r["url"] for o in only):
+                continue
+            repo = Path(r["url"]) if Path(r["url"]).is_dir() else Path(tmp) / f"repo-{i}"
+            if not Path(r["url"]).is_dir():
+                log(f"cloning {r['url']}")
+                subprocess.run(["git", "clone", "--quiet", "--no-checkout", r["url"], str(repo)], check=True)
+            for t in r["tasks"]:
+                c = None
+                try:
+                    c = candidate_for(repo, t["sha"])
+                except subprocess.CalledProcessError as e:
+                    why = f"commit not found: {e.stderr.decode(errors='replace').strip()[-120:]}"
+                else:
+                    why = "" if c else "no longer a test-and-code commit"
+                if c and validate_tasks:
+                    why = validate(repo, c, test_command(r["test_cmd"], c["tests"]), r.get("setup"), timeout, Path(tmp))
+                if why:
+                    report["failed"].append({"task": t["task"], "why": why})
+                    log(f"skip {t['task']}: {why}")
+                    continue
+                write_task(repo, c, out / t["task"], r["test_cmd"], test_command(r["test_cmd"], c["tests"]),
+                           r.get("reveal_tests", False), r.get("setup"), timeout)
+                report["written"].append(t["task"])
+                log(f"task {t['task']}")
+    (out / "fetch.json").write_text(json.dumps(report, indent=2))
+    return report

@@ -125,6 +125,47 @@ A commit that changed code and its tests becomes a task:
 
 On python-slugify this found six tasks.
 
+## A real-world benchmark: `benchmarks/realworld-v1.json`
+
+71 real changes from the histories of seven small open-source Python libraries:
+
+| Library | Tasks |
+|---|---|
+| boltons | 12 |
+| more-itertools | 12 |
+| python-semver | 12 |
+| tomli | 12 |
+| inflection | 9 |
+| itsdangerous | 8 |
+| toolz | 6 |
+
+Each task starts from a commit's parent, is prompted with the commit message, and is graded by the
+commit's own tests, held out. Every task was validated: its tests fail on the parent and pass on the
+commit. The manifest is 24 KB. The tasks are rebuilt from GitHub and re-validated on first use.
+
+The visible check is the project's own test suite, kept only where it passes on the untouched starting
+code. Where it doesn't (the held-out file was the project's only test file, or old tests that don't run
+on a current Python), it is dropped and recorded in the task's `task.json`, because a check that fails from
+the start would send the repair loop after failures the agent didn't cause. Such tasks run once, and the
+hidden tests decide.
+
+```bash
+pip install pytest freezegun hypothesis
+openagent bench benchmarks/realworld-v1.json --preset baseline --preset openagent \
+  -m anthropic/claude-sonnet-5-5 -j 8 --server auto --agentdiff -o results/
+```
+
+Make your own the same way: `openagent tasks from-git` on your repositories, then `openagent tasks export ... -o mine.json`.
+
+## Running at scale
+
+| | |
+|---|---|
+| `--resume` | Each finished run is appended to `OUT/runs.jsonl`. After a crash or Ctrl-C, run the same command with `--resume` and only the missing runs are run. |
+| `--shard I/N` | Run every N-th job starting at the I-th, to split a suite across N machines. Combine the outputs with `openagent merge s1/ s2/ ... -o all/`, which writes one report (and `--agentdiff` over the merged traces). |
+| `--server auto` | Start one `opencode serve` for the whole benchmark and attach every run to it, instead of a cold start each time. On the demo this cut the wall time from 90 s to 69 s with identical results. Pass a URL to reuse a server that is already running. |
+| `-j N` | Runs in parallel. |
+
 ## Benchmark with a real model
 
 ```bash

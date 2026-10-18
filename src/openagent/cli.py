@@ -11,6 +11,7 @@ import json
 import shutil
 import sys
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
 from . import __version__
@@ -90,13 +91,42 @@ def cmd_run(a) -> int:
     return 0 if out.passed else 1
 
 
+def _shard(text: str | None) -> tuple[int, int]:
+    if not text:
+        return 1, 1
+    i, n = (int(x) for x in text.split("/"))
+    if not 1 <= i <= n:
+        raise SystemExit(f"--shard {text}: expected i/n with 1 <= i <= n")
+    return i, n
+
+
 def _bench(tasks, strategies, oc, a, synthetic=None) -> int:
+    from .opencode import SharedServer
     out = Path(a.out)
-    log(f"{len(tasks)} task(s) x {len(strategies)} strategy(ies) x {a.repeat} repeat(s)")
-    results = run_bench(tasks, strategies, oc, a.repeat, a.jobs, log, out / "traces", synthetic)
-    ad = agentdiff_eval(out / "traces", out / "agentdiff", log=log) if a.agentdiff else None
-    js, md = write_reports(results, out, {"model": oc.model, "tasks": len(tasks), "repeat": a.repeat,
-                                          "strategies": [s.__dict__ for s in strategies], "synthetic": synthetic}, ad)
+    out.mkdir(parents=True, exist_ok=True)
+    runs_log = out / "runs.jsonl"
+    if runs_log.exists() and not getattr(a, "resume", False):
+        runs_log.unlink()  # a fresh benchmark; --resume keeps finished runs
+    shard = _shard(getattr(a, "shard", None))
+    log(f"{len(tasks)} task(s) x {len(strategies)} strategy(ies) x {a.repeat} repeat(s)"
+        + (f", shard {shard[0]}/{shard[1]}" if shard != (1, 1) else ""))
+    server = getattr(a, "server", None)
+    if server == "auto":
+        with SharedServer(oc) as url:
+            log(f"sharing one OpenCode server: {url}")
+            results = run_bench(tasks, strategies, replace(oc, attach=url), a.repeat, a.jobs, log, out / "traces",
+                                synthetic, shard, runs_log)
+    else:
+        results = run_bench(tasks, strategies, replace(oc, attach=server) if server else oc, a.repeat, a.jobs, log,
+                            out / "traces", synthetic, shard, runs_log)
+    return _report(results, out, {"model": oc.model, "tasks": len(tasks), "repeat": a.repeat,
+                                  "strategies": [s.to_dict() for s in strategies], "synthetic": synthetic,
+                                  "shard": f"{shard[0]}/{shard[1]}"}, a.agentdiff)
+
+
+def _report(results, out: Path, meta: dict, agentdiff: bool) -> int:
+    ad = agentdiff_eval(out / "traces", out / "agentdiff", log=log) if agentdiff else None
+    js, md = write_reports(results, out, meta, ad)
     print()
     for row in summarize(results):
         print(f"{row['strategy']:<12} {row['passed']}/{row['runs']} passed ({row['pass_rate']:.0%})  "
@@ -105,6 +135,19 @@ def _bench(tasks, strategies, oc, a, synthetic=None) -> int:
         print(f"\nAgentDiff {r['pair']}:\n" + (r.get("error") or r["summary"]))
     log(f"wrote {md}, {js} and traces in {out / 'traces'}")
     return 0
+
+
+def cmd_merge(a) -> int:
+    from .bench import merge_runs
+    results = merge_runs(a.dirs, a.out)
+    if not results:
+        log("no runs found (each directory needs a runs.jsonl)")
+        return 2
+    metas = [json.loads((Path(d) / "results.json").read_text()).get("meta", {}) for d in a.dirs
+             if (Path(d) / "results.json").is_file()]
+    meta = {**(metas[0] if metas else {}), "merged_from": [str(d) for d in a.dirs], "shard": None}
+    log(f"merged {len(results)} run(s) from {len(a.dirs)} director(ies)")
+    return _report(results, Path(a.out), meta, a.agentdiff)
 
 
 def cmd_bench(a) -> int:
@@ -126,7 +169,8 @@ def _strategies(a, default: list[str]) -> list[Strategy]:
 
 
 def _tasks(a) -> list:
-    tasks = discover(a.tasks)
+    from .tasks import resolve
+    tasks = discover(resolve(a.tasks, Path(a.out) / "tasks", log))
     if a.only:
         tasks = [t for t in tasks if t.name in set(a.only)]
     return tasks
@@ -195,6 +239,21 @@ def cmd_ui(a) -> int:
     return 0
 
 
+def cmd_tasks_export(a) -> int:
+    from .gittasks import export_manifest
+    m = export_manifest(a.dirs, a.name)
+    Path(a.out).write_text(json.dumps(m, indent=2) + "\n")
+    print(f"{m['tasks']} task(s) from {len(m['repos'])} repositor(ies) written to {a.out}")
+    return 0 if m["tasks"] else 1
+
+
+def cmd_tasks_fetch(a) -> int:
+    from .gittasks import fetch
+    r = fetch(json.loads(Path(a.manifest).read_text()), a.out, not a.no_validate, a.timeout, a.only, log)
+    print(f"{len(r['written'])} task(s) written to {a.out}; {len(r['failed'])} skipped (reasons in {Path(a.out) / 'fetch.json'})")
+    return 0 if r["written"] else 1
+
+
 def cmd_presets(_a) -> int:
     for name, s in PRESETS.items():
         print(f"{name:<10} preamble={s.preamble} reveal_check={s.reveal_check} "
@@ -211,6 +270,13 @@ def _bench_args(p, default_out: str) -> None:
     p.add_argument("-o", "--out", default=default_out, help=f"output directory (default: {default_out})")
     p.add_argument("--agentdiff", action="store_true",
                    help="also evaluate the traces with AgentDiff (agentdiff runs + eval, each strategy vs baseline)")
+    p.add_argument("--resume", action="store_true",
+                   help="keep the runs already finished in OUT/runs.jsonl and run only the rest")
+    p.add_argument("--shard", metavar="I/N", help="run only every N-th job starting at the I-th, to split a suite "
+                                                 "across machines; combine the outputs with `openagent merge`")
+    p.add_argument("--server", metavar="auto|URL",
+                   help="reuse one OpenCode server for every run instead of a cold start each time: 'auto' starts "
+                        "one for the benchmark, or give the URL of a running `opencode serve`")
 
 
 def main(argv=None) -> int:
@@ -234,7 +300,7 @@ def main(argv=None) -> int:
     r.set_defaults(fn=cmd_run)
 
     b = sub.add_parser("bench", help="compare strategies on a task suite")
-    b.add_argument("tasks", help="directory of tasks (see examples/tasks)")
+    b.add_argument("tasks", help="directory of tasks (see examples/tasks), or a manifest such as benchmarks/realworld-v1.json")
     _bench_args(b, "results")
     _opencode_args(b)
     _strategy_args(b)
@@ -249,7 +315,7 @@ def main(argv=None) -> int:
     d.set_defaults(fn=cmd_demo)
 
     e = sub.add_parser("evolve", help="improve the harness on your tasks, keeping a change only when the runs say it helped")
-    e.add_argument("tasks", help="directory of tasks (see examples/tasks)")
+    e.add_argument("tasks", help="directory of tasks, or a manifest (.json)")
     e.add_argument("-g", "--generations", type=int, default=5, help="changes to try at most (default 5)")
     _bench_args(e, "evolution")
     _opencode_args(e)
@@ -272,6 +338,24 @@ def main(argv=None) -> int:
     fg.add_argument("--setup", help="shell command to prepare a checkout, e.g. 'pip install -e .'")
     fg.add_argument("--timeout", type=int, default=600, help="seconds per test run while validating")
     fg.set_defaults(fn=cmd_tasks_from_git)
+    ex = tsub.add_parser("export", help="write a manifest (a benchmark as a small file) from from-git task directories")
+    ex.add_argument("dirs", nargs="+", help="directories written by `tasks from-git`")
+    ex.add_argument("-o", "--out", default="manifest.json")
+    ex.add_argument("--name", default="benchmark")
+    ex.set_defaults(fn=cmd_tasks_export)
+    fe = tsub.add_parser("fetch", help="rebuild a manifest's tasks from the repositories")
+    fe.add_argument("manifest", help="manifest JSON, e.g. benchmarks/realworld-v1.json")
+    fe.add_argument("-o", "--out", default="tasks", help="output directory (default: tasks)")
+    fe.add_argument("--no-validate", action="store_true", help="skip re-running each commit's tests on parent and commit")
+    fe.add_argument("--only", action="append", metavar="REPO", help="only repositories whose URL contains this")
+    fe.add_argument("--timeout", type=int, default=600)
+    fe.set_defaults(fn=cmd_tasks_fetch)
+
+    m = sub.add_parser("merge", help="combine benchmark outputs (shards or resumed pieces) into one report")
+    m.add_argument("dirs", nargs="+", help="benchmark output directories, each with a runs.jsonl")
+    m.add_argument("-o", "--out", default="merged", help="output directory (default: merged)")
+    m.add_argument("--agentdiff", action="store_true", help="also evaluate the merged traces with AgentDiff")
+    m.set_defaults(fn=cmd_merge)
 
     u = sub.add_parser("ui", help="open the web front end: start runs, benchmarks, evolutions and the demo, and read the results")
     u.add_argument("--port", type=int, default=8765, help="port on 127.0.0.1 (default 8765; 0 picks a free one)")

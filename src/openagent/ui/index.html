@@ -224,7 +224,8 @@ function viewBench() {
     <p class="sub">Run strategies against a folder of tasks and compare each with plain OpenCode, task by task, graded by held-out tests where a task has them. Every run is written as an AgentDiff trace.</p>
     ${needsOpencode()}
     <div class="card"><div class="grid2">
-      ${field("tasks", "Tasks folder", {value: INFO.examples || "", full: true, hint: "One folder per task: prompt.txt, files/, task.json. Make some from git history with <span class='kbd'>openagent tasks from-git</span>."})}
+      ${field("tasks", "Tasks folder or manifest", {value: INFO.examples || "", full: true, hint: "One folder per task (prompt.txt, files/, task.json), or a manifest .json whose tasks are fetched from GitHub on first use. Make your own with <span class='kbd'>openagent tasks from-git</span>."})}
+      ${INFO.realworld ? `<div class="field full"><div class="row"><button class="btn ghost small" id="rw" type="button">Use the real-world benchmark (71 tasks from 7 libraries)</button><span class="hint">needs <span class="kbd">pip install pytest freezegun hypothesis</span> and a model</span></div></div>` : ""}
       ${field("only", "Only these tasks", {ph: "comma-separated names; blank for all"})}
       ${field("harness", "Also compare a harness file", {ph: "path/to/harness.json"})}
       <div class="field full"><label>Strategies</label><div class="row">${(INFO.presets || []).map(p => `<label class="check"><input type="checkbox" class="preset" value="${esc(p)}" ${["baseline","openagent"].includes(p) ? "checked" : ""}> ${esc(p)}</label>`).join("")}</div></div>
@@ -233,6 +234,7 @@ function viewBench() {
       ${field("jobs", "In parallel", {type: "number", value: "2"})}
       <div class="field full"><label class="check"><input type="checkbox" id="agentdiff" ${INFO.agentdiff ? "checked" : "disabled"}> Evaluate with AgentDiff ${INFO.agentdiff ? "" : "(not installed)"}</label></div>
     </div><div class="row" style="margin-top:16px"><button class="btn" id="go">Start benchmark</button><span class="hint" id="err"></span></div></div>`;
+  if ($("#rw")) $("#rw").onclick = () => { document.getElementById("tasks").value = INFO.realworld; };
   $("#go").onclick = () => submit("/api/bench", {tasks: val("tasks"), only: val("only"), harness: val("harness") || undefined,
     presets: [...document.querySelectorAll(".preset:checked")].map(x => x.value), model: val("model"), binary: val("binary"),
     repeat: val("repeat"), jobs: val("jobs"), agentdiff: val("agentdiff")});
