@@ -124,7 +124,13 @@ def export(repo: Path, rev: str, dest: Path) -> None:
 
 
 def test_command(template: str, tests: list[str]) -> str:
+    """The test command for these test files. {tests} is the files; {test_dirs} their directories as
+    ./dir (what `go test` takes: Go runs tests by package). With neither, the files are appended."""
     files = " ".join(shlex.quote(t) for t in tests)
+    if "{test_dirs}" in template:
+        dirs = sorted({("./" + str(Path(t).parent)) if str(Path(t).parent) != "." else "." for t in tests})
+        template = template.replace("{test_dirs}", " ".join(shlex.quote(d) for d in dirs))
+        return template.replace("{tests}", files)
     return template.replace("{tests}", files) if "{tests}" in template else f"{template} {files}"
 
 
@@ -247,7 +253,7 @@ def write_task(repo: Path, c: dict, d: Path, test_cmd: str, grade_cmd: str, reve
     if reveal:
         cfg.update(check=grade_cmd, protect=list(c["tests"]))
     else:
-        check = test_cmd.replace("{tests}", "").strip()
+        check = test_cmd.replace("{tests}", "").replace("{test_dirs}", "./...").strip()
         why = visible_check_works(d / "files", check, setup, timeout)
         if why:  # the hidden tests alone decide; the task runs without repair against a broken check
             cfg.update(grade=f"cp -r {{task}}/grade/. . && {grade_cmd}", check_dropped=why)
@@ -264,6 +270,8 @@ def export_manifest(dirs: list[str | Path], name: str = "benchmark") -> dict:
     """A manifest from the from-git.json of each task directory `tasks from-git` wrote."""
     repos = []
     for d in map(Path, dirs):
+        if not (d / "from-git.json").is_file():
+            continue  # not a directory `tasks from-git` wrote (a log file a shell glob picked up, say)
         r = json.loads((d / "from-git.json").read_text())
         if not r["taken"]:
             continue

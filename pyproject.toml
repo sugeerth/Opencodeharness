@@ -1,6 +1,6 @@
 [project]
 name = "openagent-harness"
-version = "0.6.0"
+version = "0.7.0"
 description = "Open Agent: make OpenCode verify and repair its own work, with best-of-N and benchmarks"
 readme = "README.md"
 license = { text = "MIT" }
@@ -31,7 +31,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-openagent = ["ui/*.html"]
+openagent = ["ui/*.html", "docker/Dockerfile"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

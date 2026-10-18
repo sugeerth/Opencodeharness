@@ -927,3 +927,64 @@ def test_from_git_drops_a_visible_check_that_fails_from_the_start(tmp_path):
     (task,) = discover(tmp_path / "tasks")
     cfg = json.loads((tmp_path / "tasks" / task.name / "task.json").read_text())
     assert task.check is None and "exit 5" in cfg["check_dropped"] and task.grade
+
+
+# --- v0.7: the Docker sandbox ----------------------------------------------------------------------
+
+def _docker_ok():
+    try:
+        from openagent.sandbox import available
+        import subprocess as sp
+        return not available() and sp.run(["docker", "image", "inspect", "openagent-runner:latest"],
+                                           capture_output=True).returncode == 0
+    except Exception:
+        return False
+
+
+def test_sandbox_command_mounts_only_the_workspace_and_named_files(tmp_path, monkeypatch):
+    from openagent.sandbox import Docker
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text("{}")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("UNRELATED_SECRET", "s")
+    cmd = Docker(image="img").wrap(["opencode", "run", "x"], tmp_path / "ws", {"OPENCODE_CONFIG": str(cfg)}, "n1")
+    assert cmd[:4] == ["docker", "run", "--rm", "--name"] and cmd[-4:] == ["img", "opencode", "run", "x"]
+    assert f"{(tmp_path / 'ws').resolve()}:/work" in cmd and f"{cfg}:{cfg}:ro" in cmd
+    assert "ANTHROPIC_API_KEY=k" in cmd and not any("UNRELATED_SECRET" in c for c in cmd)
+    with pytest.raises(ValueError):
+        Docker.parse("podman")
+    assert Docker.parse("docker:my/img:1").image == "my/img:1"
+    with pytest.raises(ValueError):
+        OpenCode(sandbox=Docker(), attach="http://x")
+
+
+@pytest.mark.skipif(not _docker_ok(), reason="Docker or the openagent-runner image is not available")
+def test_sandbox_contains_writes_and_cleans_up_on_timeout(tmp_path):
+    import subprocess as sp
+    import uuid as _uuid
+    from openagent.sandbox import Docker
+    marker = f"/tmp/openagent-escape-{_uuid.uuid4().hex}"
+    d = ws(tmp_path)
+    r = run_check(f"touch {marker} && echo inside > /work/seen.txt", d, 60, Docker())
+    assert r.passed and (d / "seen.txt").read_text() == "inside\n" and not Path(marker).exists()
+    r = run_check("sleep 100", d, 3, Docker())
+    assert not r.passed and "timed out" in r.output
+    names = sp.run(["docker", "ps", "-a", "--format", "{{.Names}}"], capture_output=True, text=True).stdout
+    assert "openagent-check-" not in names
+
+
+@pytest.mark.skipif(not _docker_ok(), reason="Docker or the openagent-runner image is not available")
+def test_sandbox_grades_with_the_held_out_tests_without_showing_them_to_the_agent(tmp_path):
+    from openagent.gittasks import build
+    from openagent.sandbox import Docker
+    build(_git_repo(tmp_path), tmp_path / "tasks", "python3 -m pytest -q -p no:cacheprovider {tests}")
+    (task,) = discover(tmp_path / "tasks")
+    w = tmp_path / "w"
+    shutil.copytree(task.files, w)
+    r = run_check(task.grade, w, 120, Docker())
+    assert not r.passed and "cannot stat" not in r.output            # fails on the tests, not on the copy
+    (w / "calc.py").write_text((w / "calc.py").read_text() + "\n\ndef sub(a, b):\n    return a - b\n")
+    assert run_check(task.grade, w, 120, Docker()).passed
+    grade_dir = str(tmp_path / "tasks" / task.name / "grade")
+    agent_cmd = Docker().wrap(["opencode", "run", f"look in {grade_dir}"], w)
+    assert not any(grade_dir in a and a.endswith(":ro") for a in agent_cmd)

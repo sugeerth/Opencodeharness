@@ -49,12 +49,15 @@ class OpenCode:
     timeout: int = 900
     env: dict[str, str] | None = None
     attach: str | None = None         # URL of a running `opencode serve` to reuse instead of a cold start
+    sandbox: object | None = None     # a sandbox.Docker: run OpenCode inside a container
 
     def __post_init__(self):
         # OpenCode runs inside each workspace, so a relative path like ./bin/opencode must be resolved
         # against the directory openagent was started from, now.
         if os.sep in self.binary and not os.path.isabs(self.binary):
             self.binary = os.path.abspath(self.binary)
+        if self.sandbox is not None and self.attach:
+            raise ValueError("--server and --sandbox can't be combined: the shared server runs outside the sandbox")
 
     def command(self, prompt: str, session: str | None = None, cwd: str | Path | None = None) -> list[str]:
         cmd = [self.binary, "run", "--format", "json"]
@@ -76,8 +79,13 @@ class OpenCode:
         start = time.monotonic()
         # OpenCode takes its project directory from $PWD, which Popen's cwd= does not update.
         env = {**os.environ, **(self.env or {}), "PWD": str(Path(cwd).resolve())}
+        cmd, container = self.command(prompt, session, cwd), None
+        if self.sandbox is not None:
+            import uuid
+            container = f"openagent-{uuid.uuid4().hex[:12]}"
+            cmd = self.sandbox.wrap([self.sandbox.binary] + cmd[1:], Path(cwd), self.env, container)
         try:
-            proc = subprocess.Popen(self.command(prompt, session, cwd), cwd=cwd, env=env, text=True,
+            proc = subprocess.Popen(cmd, cwd=cwd, env=env, text=True,
                                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, start_new_session=True)
         except FileNotFoundError:
@@ -88,6 +96,8 @@ class OpenCode:
             out, err = proc.communicate(timeout=self.timeout)
         except subprocess.TimeoutExpired:
             timed_out = True
+            if container:
+                self.sandbox.kill(container)
             out, err = _kill_group(proc)
         events = parse_events(out)
         stats = summarize(events)

@@ -1,0 +1,766 @@
+{
+ "name": "realworld-go-v1",
+ "format": "openagent-manifest/1",
+ "tasks": 84,
+ "description": "Real changes from the histories of eight small open-source Go libraries. Each task starts from a commit's parent, is prompted with the commit message, and is graded by the commit's own tests (go test on the packages they live in), held out. Every task was validated: its tests fail on the parent and pass on the commit.",
+ "requires": {
+  "go": ">=1.22"
+ },
+ "made_with": "openagent tasks from-git --look 400 -n 12 --test-cmd 'go test -count=1 {test_dirs}'",
+ "repos": [
+  {
+   "url": "https://github.com/spf13/cast",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "fa4ea64dd5187a42d6bf419b06bd4f7349ed4027",
+     "task": "fa4ea64d-fix-float-string-to-number-parsing",
+     "subject": "fix: float string to number parsing",
+     "tests": [
+      "number_internal_test.go",
+      "number_test.go"
+     ]
+    },
+    {
+     "sha": "1b425f3142c8c815d1af9725ee11fbc4cac86915",
+     "task": "1b425f31-fix-indirection-of-typed-nils",
+     "subject": "fix: indirection of typed nils",
+     "tests": [
+      "basic_test.go",
+      "indirect_test.go",
+      "time_test.go"
+     ]
+    },
+    {
+     "sha": "9ffddd42bd84b02544a02732956ce53b114ea6e6",
+     "task": "9ffddd42-feat-add-alias-resolution",
+     "subject": "feat: add alias resolution",
+     "tests": [
+      "basic_test.go",
+      "cast_test.go",
+      "number_test.go",
+      "time_test.go"
+     ]
+    },
+    {
+     "sha": "a6d26bd7411fd9ab84c716d810b9bcc525654771",
+     "task": "a6d26bd7-feat-add-alias-resolution-function",
+     "subject": "feat: add alias resolution function",
+     "tests": [
+      "alias_test.go"
+     ]
+    },
+    {
+     "sha": "c6df2d85f953c415a56f3fe0d64e22f23f60b4a3",
+     "task": "c6df2d85-chore-improve-map-cast-functions",
+     "subject": "chore: improve map cast functions",
+     "tests": [
+      "map_test.go"
+     ]
+    },
+    {
+     "sha": "c0ba9514f9505644247e6a949cd1f5499cb2904b",
+     "task": "c0ba9514-refactor-improve-slice-tests-add-pointer",
+     "subject": "refactor: improve slice tests, add pointer support",
+     "tests": [
+      "slice_test.go"
+     ]
+    },
+    {
+     "sha": "cd8c9c354e856d12fcbe4f55773ba5b0e888e7bc",
+     "task": "cd8c9c35-refactor-improve-time-tests",
+     "subject": "refactor: improve time tests",
+     "tests": [
+      "cast_test.go",
+      "time_test.go"
+     ]
+    },
+    {
+     "sha": "a5c9ee711b8fafaa0d70e8c3c6115893cde0a86a",
+     "task": "a5c9ee71-test-add-pointer-tests-to-numbers",
+     "subject": "test: add pointer tests to numbers",
+     "tests": [
+      "cast_test.go",
+      "number_test.go"
+     ]
+    },
+    {
+     "sha": "ac48031262fa1441c566e5d32719c91094a0d950",
+     "task": "ac480312-feat-support-converting-float-string-num",
+     "subject": "feat: support converting float string numbers to integer types",
+     "tests": [
+      "number_internal_test.go",
+      "number_test.go"
+     ]
+    },
+    {
+     "sha": "b7bd89a1ed9685385d57c034007b28d42c6a2fbb",
+     "task": "b7bd89a1-feat-return-0-when-casting-an-empty-json",
+     "subject": "feat: return 0 when casting an empty json.Number to a number",
+     "tests": [
+      "number_test.go"
+     ]
+    },
+    {
+     "sha": "f8878b2500cef6400503f178ede17e3dd09bb611",
+     "task": "f8878b25-feat-return-0-when-casting-an-empty-stri",
+     "subject": "feat: return 0 when casting an empty string to a number",
+     "tests": [
+      "number_test.go"
+     ]
+    },
+    {
+     "sha": "771c2b3ff5a5698bca62e77e4564ea1380f745a8",
+     "task": "771c2b3f-refactor-merge-bool-and-string-code-back",
+     "subject": "refactor: merge bool and string code back to a single file",
+     "tests": [
+      "basic_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/tidwall/gjson",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "9378d3bb93e20854e1677e0e0248e1d71ae5712f",
+     "task": "9378d3bb-fix-result-path-panics",
+     "subject": "Fix Result.Path panics",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "8d89927eff414537088a6092d53fecf6711c1e75",
+     "task": "8d89927e-ensure-floating-points-are-correctly-bei",
+     "subject": "Ensure floating points are correctly being clipped",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "6ac9851f5247bff94b0df2262ea60096fc0afb83",
+     "task": "6ac9851f-change-utf8-behavior-for-invalid-codepoi",
+     "subject": "Change utf8 behavior for invalid codepoints",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "0fac2c9aa6eb5d5564bfaaaad513ce0d5d2314de",
+     "task": "0fac2c9a-add-iterator-functions-all-keys-and-valu",
+     "subject": "Add iterator functions All, Keys, and Values",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "5ab551f3ac05551c469e5f5ab26154a49f69afcf",
+     "task": "5ab551f3-add-flag-for-disabling-html-escaping",
+     "subject": "Add flag for disabling HTML escaping",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "28d458b14c40df6321bba23bcb39579d468f5e97",
+     "task": "28d458b1-disable-html-escaping",
+     "subject": "Disable html escaping",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "e4fc67c92aeebf2089fabc7872f010e340d105db",
+     "task": "e4fc67c9-added-group-modifier",
+     "subject": "Added group modifier",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "38071ea7f28f2b06b726a18690d5d3a6d7fae496",
+     "task": "38071ea7-add-tostr-and-fromstr-modifiers",
+     "subject": "Add tostr and fromstr modifiers",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "db0033701cccc8e2e43b77d03e4f509a48b6b2f2",
+     "task": "db003370-set-array-index-as-key-for-foreach",
+     "subject": "Set array index as key for ForEach",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "d3a134957c5d50327f8aaa4b101e164da140de9c",
+     "task": "d3a13495-fix-modifier-bug-in-multipath-selector",
+     "subject": "Fix modifier bug in multipath selector",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "6b6af2ad5e5c06e6cc3968ca7a2c0f9c20da8924",
+     "task": "6b6af2ad-added-new-static-value-character",
+     "subject": "Added new static value character",
+     "tests": [
+      "gjson_test.go"
+     ]
+    },
+    {
+     "sha": "2c9fd2476ab6648576dc53a77d8f629e1a697689",
+     "task": "2c9fd247-added-path-and-paths-for-getting-the-ori",
+     "subject": "Added Path and Paths for getting the original path of a Result",
+     "tests": [
+      "gjson_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/gobwas/glob",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "dab909e9fbced7c3160dce78fb7410584134ade3",
+     "task": "dab909e9-all-split-parse-go-into-parse-go-match-g",
+     "subject": "all: split parse.go into parse.go/match.go, polish docs, fix U+FFFD",
+     "tests": [
+      "fuzz_test.go",
+      "glob_test.go",
+      "issues_test.go"
+     ]
+    },
+    {
+     "sha": "a82038c982634d624c205e2802186ccae512d28b",
+     "task": "a82038c9-pattern-string-and-separators-impl",
+     "subject": "pattern: String() and Separators() impl",
+     "tests": [
+      "glob_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/dustin/go-humanize",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "212246793da0a95873d1f3be675529f7ab7dc799",
+     "task": "21224679-fix-promote-rounded-byte-counts-to-the-n",
+     "subject": "fix: promote rounded byte counts to the next unit",
+     "tests": [
+      "bigbytes_test.go",
+      "bytes_test.go"
+     ]
+    },
+    {
+     "sha": "1b638b2c0d9b358cbae4b51b74f136d9a6055d1a",
+     "task": "1b638b2c-si-don-t-give-infinities-and-nan-an-si-p",
+     "subject": "si: don't give infinities and NaN an SI prefix",
+     "tests": [
+      "si_test.go"
+     ]
+    },
+    {
+     "sha": "3f452f3a9856b44b700355164b82b72c11a831dd",
+     "task": "3f452f3a-don-t-modify-input-in-negative-big-comma",
+     "subject": "Don't modify input in negative big commas.",
+     "tests": [
+      "commaf_fuzz_test.go",
+      "commaf_test.go"
+     ]
+    },
+    {
+     "sha": "40736da3e8ed16369b5e6f109548f243d43a7e34",
+     "task": "40736da3-fix-105",
+     "subject": "Fix #105",
+     "tests": [
+      "comma_test.go"
+     ]
+    },
+    {
+     "sha": "528b6f774c2b2dee6e5b25ab302774b530ae6bd0",
+     "task": "528b6f77-fix-85",
+     "subject": "Fix #85",
+     "tests": [
+      "times_test.go"
+     ]
+    },
+    {
+     "sha": "2ccb40ff40263df6ede3d42093de3b7b0eaeb4ae",
+     "task": "2ccb40ff-fix-103",
+     "subject": "Fix #103",
+     "tests": [
+      "bytes_test.go"
+     ]
+    },
+    {
+     "sha": "0509d5bf3e4a84cd3c8d15e7cd5fdb929da99cb4",
+     "task": "0509d5bf-feat-add-parsecomma-and-parsecommaf-with",
+     "subject": "feat: add ParseComma and ParseCommaf with doc comments and epsilon test",
+     "tests": [
+      "comma_test.go"
+     ]
+    },
+    {
+     "sha": "d02cffb61101b0ade0441980df6caac451df52a5",
+     "task": "d02cffb6-si-accept-the-greek-letter-mu-as-an-alia",
+     "subject": "si: accept the Greek letter mu as an alias for \u00b5 in ParseSI",
+     "tests": [
+      "si_test.go"
+     ]
+    },
+    {
+     "sha": "1b1d99a68861dff795f33e1e86eba4ef2b12602e",
+     "task": "1b1d99a6-si-clamp-the-exponent-to-the-prefixes-th",
+     "subject": "si: clamp the exponent to the prefixes the table can name",
+     "tests": [
+      "si_test.go"
+     ]
+    },
+    {
+     "sha": "71f653b2f435ca3898cffe7097697aa59227a87e",
+     "task": "71f653b2-parse-integer-byte-counts-exactly-in-par",
+     "subject": "Parse integer byte counts exactly in ParseBytes",
+     "tests": [
+      "bytes_test.go"
+     ]
+    },
+    {
+     "sha": "6c77086689a8f1abb1348ccd165447c848949446",
+     "task": "6c770866-fix-handle-inf-and-nan-in-commaf-and-big",
+     "subject": "fix: handle Inf and NaN in Commaf and BigCommaf",
+     "tests": [
+      "comma_test.go",
+      "commaf_test.go"
+     ]
+    },
+    {
+     "sha": "9bb3c6df02b552fbd57b316f7aad0551d3039892",
+     "task": "9bb3c6df-format-large-float-integer-parts-without",
+     "subject": "Format large float integer parts without narrowing to int64",
+     "tests": [
+      "number_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/hashicorp/go-version",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "c6a3b5735e33d3e07a9cfbc8343e84b69d471b80",
+     "task": "c6a3b573-fix-core-panicking-on-a-zero-value-versi",
+     "subject": "Fix Core panicking on a zero-value Version (#227)",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "432fe0f8b7f30125b005062390fb3ceced2fb65e",
+     "task": "432fe0f8-rank-a-shorter-prerelease-lower-fixing-n",
+     "subject": "Rank a shorter prerelease lower, fixing non-transitive Compare (#208)",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "44e3b535e15c65a04c85e7be057b548aca7dfb90",
+     "task": "44e3b535-fix-empty-version-string-prints-0-0-0-20",
+     "subject": "fix: empty Version.String() prints 0.0.0 (#201)",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "b4ab5fc7d9d3eb48253b467f8f00b22403ec8089",
+     "task": "b4ab5fc7-support-parsing-versions-with-custom-pre",
+     "subject": "Support parsing versions with custom prefixes via opt-in option (#79)",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "53dbf704b370109447615f3227ff667be8e54c74",
+     "task": "53dbf704-add-prerelease-function-onto-constraint",
+     "subject": "Add Prerelease function onto Constraint",
+     "tests": [
+      "constraint_test.go"
+     ]
+    },
+    {
+     "sha": "82485a6d3d05fff8fa8b838334676ee6ab8e6364",
+     "task": "82485a6d-add-json-handlers-93",
+     "subject": "Add json handlers (#93)",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "feceee7a42f63c2f0d0fb6a05229bedf68536094",
+     "task": "feceee7a-constraint-s-introduce-equals-and-sort-i",
+     "subject": "Constraint(s): introduce Equals() and sort.Interface",
+     "tests": [
+      "constraint_test.go"
+     ]
+    },
+    {
+     "sha": "7da126b9f5d830386b27fa8e2f04fbbddcfe04e8",
+     "task": "7da126b9-add-core-func",
+     "subject": "add Core func",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "a6043353333f90fd8ca9e55dd006201a25d5aedb",
+     "task": "a6043353-add-nil-check-to-version-equal",
+     "subject": "Add nil check to Version.Equal",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "d134672841c9088c830b7f7a08ac365c71a364aa",
+     "task": "d1346728-implement-greaterthanorequal-lessthanore",
+     "subject": "Implement GreaterThanOrEqual + LessThanOrEqual",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "a3eb2096bb1697fbe2bb4103cc97285a676b111f",
+     "task": "a3eb2096-add-new-constructor-that-strictly-adhere",
+     "subject": "Add new constructor that strictly adheres to semver specs",
+     "tests": [
+      "version_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/stretchr/objx",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "ff220f0a7cc4d66a71058172b9c6b3493f41b1cb",
+     "task": "ff220f0a-preserve-bracket-keys-with-overflowing-n",
+     "subject": "Preserve bracket keys with overflowing numeric prefixes (#189)",
+     "tests": [
+      "accessors_test.go"
+     ]
+    },
+    {
+     "sha": "51e5b7a66ba8f245027ee3bcf8a2450ab542e937",
+     "task": "51e5b7a6-preserve-slices-when-bracket-indexes-ove",
+     "subject": "Preserve slices when bracket indexes overflow (#188)",
+     "tests": [
+      "accessors_test.go"
+     ]
+    },
+    {
+     "sha": "98bd7e1099a6eb1c3a3a489d32a953581863cfdc",
+     "task": "98bd7e10-fix-indexed-set-on-typed-slices-186",
+     "subject": "Fix indexed Set on typed slices (#186)",
+     "tests": [
+      "accessors_test.go"
+     ]
+    },
+    {
+     "sha": "3af36f9881fe9b0d20faeac0d2b2ae94e8777056",
+     "task": "3af36f98-feat-add-delete-method-to-map-by-selecto",
+     "subject": "feat: add Delete method to Map by selector (#174)",
+     "tests": [
+      "accessors_test.go"
+     ]
+    },
+    {
+     "sha": "be9331ce6c87ed12f513e069bdf11076624e4a19",
+     "task": "be9331ce-differentiate-nil-values-from-missing-ke",
+     "subject": "Differentiate nil values from missing keys in Map.Has (#172)",
+     "tests": [
+      "tests_test.go"
+     ]
+    },
+    {
+     "sha": "7c540539994b39310d66c2bfa7e66d968dc68346",
+     "task": "7c540539-fix-where-returning-the-items-the-decide",
+     "subject": "Fix Where* returning the items the decider rejected (#180)",
+     "tests": [
+      "type_specific_codegen_test.go",
+      "type_specific_test.go"
+     ]
+    },
+    {
+     "sha": "308c40d4b68c55c6a40d1786c0ab79b79163e9e1",
+     "task": "308c40d4-cover-nested-url-values-and-keep-repeate",
+     "subject": "Cover nested URL values and keep repeated map-slice entries (#177)",
+     "tests": [
+      "conversions_test.go"
+     ]
+    },
+    {
+     "sha": "ca60ae37e513988f5b519a9f5d204df730fa3b10",
+     "task": "ca60ae37-preserve-null-values-when-converting-nil",
+     "subject": "Preserve null values when converting nil containers to JSON (#171)",
+     "tests": [
+      "conversions_nil_test.go"
+     ]
+    },
+    {
+     "sha": "89f7fb1a3e0c567e702991147d30ccffe5196139",
+     "task": "89f7fb1a-preserve-slices-when-setting-an-indexed",
+     "subject": "Preserve slices when setting an indexed value (#170)",
+     "tests": [
+      "accessors_test.go"
+     ]
+    },
+    {
+     "sha": "4ff3852e7937649b7dd13364f7f7a25c651ef45b",
+     "task": "4ff3852e-fix-int-to-float-conversions-108",
+     "subject": "fix int to float conversions (#108)",
+     "tests": [
+      "map_test.go",
+      "type_specific_test.go"
+     ]
+    },
+    {
+     "sha": "0ea374a6f41426d08157e82fd362ba3cccf8eaa4",
+     "task": "0ea374a6-fix-nested-array-access-104",
+     "subject": "fix nested array access (#104)",
+     "tests": [
+      "accessors_test.go"
+     ]
+    },
+    {
+     "sha": "6c797d85514c4d6037645a011a3024b4a7ef63ac",
+     "task": "6c797d85-add-helpers-for-slice-of-map-102",
+     "subject": "Add helpers for slice of Map (#102)",
+     "tests": [
+      "map_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/Masterminds/semver",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "8be72f4054dfcdd82a149e807ea45c72f91e5dad",
+     "task": "8be72f40-adding-increment-functions-that-error",
+     "subject": "Adding increment functions that error",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "29d51d0ea4bffe39173673685d0dd312447d74a7",
+     "task": "29d51d0e-fixing-some-quality-issues",
+     "subject": "Fixing some quality issues",
+     "tests": [
+      "constraints_test.go",
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "9153d55d8e24105af872b3be62fdceef30062fcf",
+     "task": "9153d55d-adding-some-checks-in",
+     "subject": "Adding some checks in",
+     "tests": [
+      "constraints_test.go"
+     ]
+    },
+    {
+     "sha": "b65b33f02f13ee4bf96b5d18ad16cab9515f72ea",
+     "task": "b65b33f0-fix-edge-cases",
+     "subject": "Fix edge cases",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "d985ecaafdb1b0f7a8fd5f7044e018107e6e3421",
+     "task": "d985ecaa-update-constraint-error-messages",
+     "subject": "Update constraint error messages",
+     "tests": [
+      "constraints_test.go"
+     ]
+    },
+    {
+     "sha": "c3747513c320448dfaf6f75c6a06a14a6221896f",
+     "task": "c3747513-add-property-to-include-prereleases",
+     "subject": "Add property to include prereleases",
+     "tests": [
+      "constraints_test.go"
+     ]
+    },
+    {
+     "sha": "abab1c2f5fcf52a1483bfc4be892a0ad42afd09a",
+     "task": "abab1c2f-handle-pre-releases-on-all-in-an-and-gro",
+     "subject": "Handle pre-releases on all in an and group",
+     "tests": [
+      "constraints_test.go"
+     ]
+    },
+    {
+     "sha": "4ed619ef3b4f63d7c94b2e19725c2719054de3bd",
+     "task": "4ed619ef-restore-the-ability-to-have-leading-0-s",
+     "subject": "Restore the ability to have leading 0's with NewVersion",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "f32e01f6c37450296f03a0f58bdbbb29fc9fcfd0",
+     "task": "f32e01f6-restore-detailed-errors-when-failed-to-p",
+     "subject": "Restore detailed errors when failed to parse with NewVersion",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "252dd61dd30c2bcf2bcfc30be1428c68d8f25934",
+     "task": "252dd61d-fix-for-allowing-some-version-that-were",
+     "subject": "Fix for allowing some version that were invalid",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "be924f580ced5047bdd642c51279d4ab011b204c",
+     "task": "be924f58-add-and",
+     "subject": "add >= and <=",
+     "tests": [
+      "version_test.go"
+     ]
+    },
+    {
+     "sha": "441ff8e5c8c464b3b1090ea5300a8e0fc4287e6f",
+     "task": "441ff8e5-feat-nil-version-equality",
+     "subject": "feat: nil version equality",
+     "tests": [
+      "version_test.go"
+     ]
+    }
+   ]
+  },
+  {
+   "url": "https://github.com/google/uuid",
+   "test_cmd": "go test -count=1 {test_dirs}",
+   "setup": null,
+   "reveal_tests": false,
+   "tasks": [
+    {
+     "sha": "2d3c2a9cc518326daf99a383f07c4d3c44317e4d",
+     "task": "2d3c2a9c-feat-generate-v6-from-custom-time-172",
+     "subject": "feat: Generate V6 from custom time (#172)",
+     "tests": [
+      "time_test.go",
+      "version6_test.go"
+     ]
+    },
+    {
+     "sha": "e8d82d30a3eb641530570da83295395651911778",
+     "task": "e8d82d30-feat-add-compare-function-163",
+     "subject": "feat: add Compare function (#163)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "a2b2b32373ff0b1a312b7fdf6d38a977099698a6",
+     "task": "a2b2b323-fix-monotonicity-in-uuidv7-150",
+     "subject": "fix: Monotonicity in UUIDv7 (#150)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "9ee7366e66c9ad96bab89139418a713dc584ae29",
+     "task": "9ee7366e-feat-validate-uuid-without-creating-new",
+     "subject": "feat: Validate UUID without creating new UUID (#141)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "b35aa6a595277504b1ec94c520d4091ec050b9d5",
+     "task": "b35aa6a5-add-uuid-version-6-and-7-139",
+     "subject": "add uuid version 6 and 7 (#139)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "cd5fbbdd02f3e3467ac18940e07e062be1f864b4",
+     "task": "cd5fbbdd-feat-uuids-slice-type-with-strings-conve",
+     "subject": "feat: UUIDs slice type with Strings() convenience method (#133)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "ae25fc6a8e2fa9c3a72fc325117330736fe729f6",
+     "task": "ae25fc6a-feat-uuid-added-support-for-nulluuid-76",
+     "subject": "feat(uuid): Added support for NullUUID (#76)",
+     "tests": [
+      "null_test.go"
+     ]
+    },
+    {
+     "sha": "655bf50db9d265813a26b0fe2a5d1e80fb9e3c6b",
+     "task": "655bf50d-add-randomness-pool-mode-for-v4-uuid-80",
+     "subject": "Add randomness pool mode for V4 UUID (#80)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "512b657a42880af87e9f0d863aa6dccf3540d4ba",
+     "task": "512b657a-feat-add-public-matcher-function-for-cus",
+     "subject": "feat: add public matcher function for custom error type invalidLengthError (#78)",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "f00b2048a800039aa9459130d964406d60b1a92f",
+     "task": "f00b2048-remove-uuid-source",
+     "subject": "remove uuid_source",
+     "tests": [
+      "uuid_test.go"
+     ]
+    },
+    {
+     "sha": "005951d4003282fcb5ce3644a29d2bbbc62baee0",
+     "task": "005951d4-added-source-to-enable-concurrent-reprod",
+     "subject": "added source to enable concurrent reproducible usage",
+     "tests": [
+      "uuid_source_test.go"
+     ]
+    }
+   ]
+  }
+ ]
+}

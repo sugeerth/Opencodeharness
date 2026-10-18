@@ -18,15 +18,26 @@ class CheckResult:
     seconds: float
 
 
-def run_check(command: str, cwd: str | Path, timeout: int = 600) -> CheckResult:
-    """Run `command` in a shell in `cwd`; exit 0 passes. Output is the combined stdout/stderr tail."""
+def run_check(command: str, cwd: str | Path, timeout: int = 600, sandbox=None) -> CheckResult:
+    """Run `command` in a shell in `cwd` (inside the sandbox's container if given); exit 0 passes.
+    Output is the combined stdout/stderr tail."""
     start = time.monotonic()
-    proc = subprocess.Popen(command, shell=True, cwd=cwd, text=True, stdin=subprocess.DEVNULL,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
+    container = None
+    if sandbox is not None:
+        import uuid
+        container = f"openagent-check-{uuid.uuid4().hex[:12]}"
+        proc = subprocess.Popen(sandbox.wrap_shell(command, Path(cwd), container), cwd=cwd, text=True,
+                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                start_new_session=True)
+    else:
+        proc = subprocess.Popen(command, shell=True, cwd=cwd, text=True, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
     try:
         out, _ = proc.communicate(timeout=timeout)
         code = proc.returncode
     except subprocess.TimeoutExpired:
+        if container:
+            sandbox.kill(container)
         try:
             os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:

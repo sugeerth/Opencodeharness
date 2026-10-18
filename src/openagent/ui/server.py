@@ -36,6 +36,7 @@ from ..verify import CACHE_DIRS
 PAGE = Path(__file__).with_name("index.html")
 EXAMPLES = Path(__file__).resolve().parents[3] / "examples" / "tasks"
 REALWORLD = Path(__file__).resolve().parents[3] / "benchmarks" / "realworld-v1.json"
+REALWORLD_GO = Path(__file__).resolve().parents[3] / "benchmarks" / "realworld-go-v1.json"
 MAX_DIFF = 400_000
 FAVICON = (b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" '
            b'fill="#0f6e5f"/><path d="M11 9l12 7-12 7z" fill="#fff"/></svg>')
@@ -111,8 +112,15 @@ class Store:
 # ---- job bodies ---------------------------------------------------------------------------------
 
 def _oc(p: dict, env: dict | None = None) -> OpenCode:
+    sandbox = None
+    if p.get("sandbox"):
+        from ..sandbox import Docker, available
+        why = available()
+        if why:
+            raise ValueError(f"sandbox: {why}")
+        sandbox = Docker.parse(p["sandbox"] if isinstance(p["sandbox"], str) else "docker")
     return OpenCode(binary=p.get("binary") or "opencode", model=p.get("model") or None,
-                    agent=p.get("agent") or None, timeout=int(p.get("timeout") or 900), env=env)
+                    agent=p.get("agent") or None, timeout=int(p.get("timeout") or 900), env=env, sandbox=sandbox)
 
 
 def _strategy(p: dict) -> Strategy:
@@ -312,6 +320,8 @@ def make_handler(store: Store, token: str):
                                        "agentdiff": shutil.which("agentdiff"), "examples": str(EXAMPLES),
                                        "examples_exist": EXAMPLES.is_dir(), "presets": list(PRESETS),
                                        "realworld": str(REALWORLD) if REALWORLD.is_file() else None,
+                                       "realworld_go": str(REALWORLD_GO) if REALWORLD_GO.is_file() else None,
+                                       "docker": not __import__("openagent.sandbox", fromlist=["available"]).available(),
                                        "home": str(store.home), "cwd": os.getcwd()})
                 if parts == ["api", "jobs"]:
                     return self._json([j.meta() for j in sorted(store.jobs.values(), key=lambda j: -j.created)])

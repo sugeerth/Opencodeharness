@@ -252,7 +252,7 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
         now = last = fingerprint(workspace)
         changed = [p for group in changes(prev, now).values() for p in group]
         touched.update(changed)
-        cr = run_check(check, workspace, check_timeout) if check else None
+        cr = run_check(check, workspace, check_timeout, oc.sandbox) if check else None
         result.rounds.append(Round(run.exit_code, run.seconds, run.stats, cr, tampered, prompt, run.events, changed,
                                    run.stderr, retried))
         if run.infra_failure:
@@ -283,10 +283,10 @@ def attempt(task: str, workspace: Path, check: str | None, oc: OpenCode, strateg
     return finish("rounds_exhausted" if strategy.rounds else "failed")
 
 
-def preflight(check: str, workdir: Path, timeout: int) -> tuple[CheckResult, str]:
+def preflight(check: str, workdir: Path, timeout: int, sandbox=None) -> tuple[CheckResult, str]:
     """Run the check on the untouched workspace. Returns (result, error) where error is set
     if the check could not run at all."""
-    cr = run_check(check, workdir, timeout)
+    cr = run_check(check, workdir, timeout, sandbox)
     if cr.exit_code in NOT_RUNNABLE or "command not found" in cr.output.lower():
         return cr, f"the check could not run (exit {cr.exit_code}): {cr.output.strip()[-300:]}"
     return cr, ""
@@ -303,7 +303,7 @@ def solve(task: str, workdir: str | Path, check: str | None = None, oc: OpenCode
         return Outcome(strategy, False, None, [], None, f"not a directory: {workdir}")
     pre = None
     if check and preflight_check:
-        pre, err = preflight(check, workdir, check_timeout)
+        pre, err = preflight(check, workdir, check_timeout, oc.sandbox)
         if err:
             log(err)
             return Outcome(strategy, False, None, [], pre, err)

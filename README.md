@@ -125,9 +125,11 @@ A commit that changed code and its tests becomes a task:
 
 On python-slugify this found six tasks.
 
-## A real-world benchmark: `benchmarks/realworld-v1.json`
+## Real-world benchmarks: Python and Go
 
-71 real changes from the histories of seven small open-source Python libraries:
+There are two benchmarks: `benchmarks/realworld-v1.json` (Python) and `benchmarks/realworld-go-v1.json` (Go), 155 tasks in all.
+
+### Python: 71 tasks from seven libraries
 
 | Library | Tasks |
 |---|---|
@@ -155,7 +157,48 @@ openagent bench benchmarks/realworld-v1.json --preset baseline --preset openagen
   -m anthropic/claude-sonnet-5-5 -j 8 --server auto --agentdiff -o results/
 ```
 
+### Go: 84 tasks from eight libraries
+
+| Library | Tasks |
+|---|---|
+| spf13/cast | 12 |
+| tidwall/gjson | 12 |
+| dustin/go-humanize | 12 |
+| stretchr/objx | 12 |
+| Masterminds/semver | 12 |
+| hashicorp/go-version | 11 |
+| google/uuid | 11 |
+| gobwas/glob | 2 |
+
+These were mined with `--test-cmd "go test -count=1 {test_dirs}"`. `{test_dirs}` names the packages the held-out tests live in, because Go runs tests per package.
+
+```bash
+openagent bench benchmarks/realworld-go-v1.json --preset baseline --preset openagent -m anthropic/claude-sonnet-5-5 \
+  -j 8 --sandbox docker --agentdiff -o results-go/
+```
+
 Make your own the same way: `openagent tasks from-git` on your repositories, then `openagent tasks export ... -o mine.json`.
+
+## The Docker sandbox: `--sandbox docker`
+
+Open Agent passes OpenCode `--auto`, so the agent can run any shell command. With `--sandbox docker[:IMAGE]`,
+OpenCode, the check, the setup command and the held-out grade all run inside a container. The container sees:
+- the workspace, at `/work`
+- a private home where the attempt's OpenCode sessions persist across repair rounds
+- your `opencode auth login` credentials and provider API keys
+- any file an environment variable names, read-only, such as a provider config or a corporate CA bundle
+
+A write anywhere else stays in the container, and a timed-out container is removed (`docker rm -f`), not just its client.
+
+```bash
+openagent sandbox build          # openagent-runner: Python 3.13 + pytest, Node 22, Go 1.24, OpenCode
+openagent run "fix the failing tests" -c "pytest -q" --sandbox docker
+openagent bench benchmarks/realworld-v1.json -m <model> --sandbox docker -j 8
+```
+
+Extend the image with your project's toolchain (`FROM openagent-runner:latest`) and pass `--sandbox docker:your-image`. The UI has the same option as a checkbox.
+Behind a TLS-intercepting proxy, `sandbox build` mounts the CA bundle named by `NODE_EXTRA_CA_CERTS` or `SSL_CERT_FILE` as a build secret, so it never ends up in the image.
+Tested here: the demo gives the same results in the sandbox as outside it, and the traces show OpenCode working in `/work`.
 
 ## Running at scale
 

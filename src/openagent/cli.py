@@ -38,6 +38,9 @@ def _opencode_args(p: argparse.ArgumentParser) -> None:
     g.add_argument("--binary", default="opencode", help="path to the opencode executable")
     g.add_argument("--timeout", type=int, default=900, help="seconds per OpenCode run (default 900)")
     g.add_argument("--no-auto", action="store_true", help="don't pass --auto (OpenCode may then block on permissions)")
+    g.add_argument("--sandbox", metavar="docker[:IMAGE]",
+                   help="run OpenCode and every check inside a Docker container that sees only the workspace "
+                        "(build the default image with `openagent sandbox build`)")
     g.add_argument("--oc-arg", action="append", default=[], metavar="ARG",
                    help="extra argument for `opencode run` (repeatable), e.g. --oc-arg=--thinking")
 
@@ -54,8 +57,15 @@ def _strategy_args(p: argparse.ArgumentParser) -> None:
 
 
 def _make_oc(a, env=None) -> OpenCode:
+    sandbox = None
+    if getattr(a, "sandbox", None):
+        from .sandbox import Docker, available
+        why = available()
+        if why:
+            raise SystemExit(f"openagent: --sandbox: {why}")
+        sandbox = Docker.parse(a.sandbox)
     return OpenCode(binary=a.binary, model=a.model, agent=a.agent, auto=not a.no_auto,
-                    extra_args=a.oc_arg, timeout=a.timeout, env=env)
+                    extra_args=a.oc_arg, timeout=a.timeout, env=env, sandbox=sandbox)
 
 
 def _override(strategy, a):
@@ -201,8 +211,8 @@ def _evolve(tasks, oc, a, synthetic=None) -> int:
 
 def cmd_demo(a) -> int:
     from .sim import ScriptedModel
-    if shutil.which(a.binary) is None:
-        log(f"`{a.binary}` not found. The demo runs the real OpenCode: npm i -g opencode-ai")
+    if shutil.which(a.binary) is None and not a.sandbox:  # in the sandbox OpenCode comes from the image
+        log(f"`{a.binary}` not found. The demo runs the real OpenCode: npm i -g opencode-ai (or use --sandbox docker)")
         return 2
     root = Path(a.tasks)
     if not root.is_dir():
@@ -252,6 +262,15 @@ def cmd_tasks_fetch(a) -> int:
     r = fetch(json.loads(Path(a.manifest).read_text()), a.out, not a.no_validate, a.timeout, a.only, log)
     print(f"{len(r['written'])} task(s) written to {a.out}; {len(r['failed'])} skipped (reasons in {Path(a.out) / 'fetch.json'})")
     return 0 if r["written"] else 1
+
+
+def cmd_sandbox_build(a) -> int:
+    from .sandbox import available, build
+    why = available()
+    if why:
+        log(why)
+        return 2
+    return build(a.image, log)
 
 
 def cmd_presets(_a) -> int:
@@ -362,6 +381,12 @@ def main(argv=None) -> int:
     u.add_argument("--home", help="where jobs are kept (default ~/.openagent/ui)")
     u.add_argument("--no-browser", action="store_true", help="don't open a browser")
     u.set_defaults(fn=cmd_ui)
+
+    sb = sub.add_parser("sandbox", help="the Docker sandbox")
+    sbsub = sb.add_subparsers(dest="sandbox_cmd", required=True)
+    sbb = sbsub.add_parser("build", help="build the default runner image (Python 3.13, Node 22, OpenCode, pytest)")
+    sbb.add_argument("--image", default="openagent-runner:latest")
+    sbb.set_defaults(fn=cmd_sandbox_build)
 
     sub.add_parser("presets", help="list strategy presets").set_defaults(fn=cmd_presets)
 

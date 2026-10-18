@@ -37,3 +37,19 @@ jobs:
         with:
           name: demo-results
           path: demo-results
+
+  sandbox:
+    # The Docker sandbox end to end: build the runner image, run the demo inside it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e '.[dev]'
+      - run: openagent sandbox build
+      - run: pytest -q -k sandbox
+      - run: openagent demo --only hello --only fix-average --preset baseline --preset openagent --sandbox docker -o sandbox-results
+      - name: Same results as outside the sandbox
+        run: |
+          python -c "import json, sys; r = {(x['task'], x['strategy']): x['passed'] for x in json.load(open('sandbox-results/results.json'))['results']}; print(r); sys.exit(r != {('hello', 'baseline'): True, ('hello', 'openagent'): True, ('fix-average', 'baseline'): False, ('fix-average', 'openagent'): True})"

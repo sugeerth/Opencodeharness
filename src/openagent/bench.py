@@ -41,7 +41,7 @@ def run_one(task: Task, strategy: Strategy, oc: OpenCode, repeat: int = 0, log: 
         else:
             ws.mkdir()
         if task.setup:
-            s = run_check(task.setup, ws)
+            s = run_check(task.setup, ws, sandbox=oc.sandbox)
             if not s.passed:
                 log(f"{tag}: setup failed")
                 return {**base, "passed": False, "check_passed": False, "stop": "setup_failed",
@@ -49,7 +49,7 @@ def run_one(task: Task, strategy: Strategy, oc: OpenCode, repeat: int = 0, log: 
         out = solve(task.prompt, ws, task.check, oc, strategy, task.protect, log=lambda m: log(f"{tag}: {m}"))
         graded, grade_output = None, ""
         if task.grade and not out.error:
-            g = run_check(task.grade, ws)
+            g = run_check(task.grade, ws, sandbox=oc.sandbox)
             graded, grade_output = g.passed, excerpt(g.output, 40, 15)
             log(f"{tag}: held-out grade {'passed' if g.passed else 'failed'}")
     rec = {**base, **out.to_dict(), "check_passed": out.passed,
