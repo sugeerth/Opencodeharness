@@ -147,13 +147,15 @@ points OpenCode at it (`--env-file` appends it to a file, e.g. `$GITHUB_ENV`). T
 
 `openagent ui` opens a local web app (standard library only, no build step). From it you can:
 - **Start runs:** pick the repository, task, check, protected files, preset or evolved harness, model, rounds, attempts and budget. By default the agent works in a copy, so your folder isn't changed and the diff is shown.
-- **Watch runs live,** then read the result, the diff and every step of the trace: OpenCode's tool calls, Open Agent's checks, repairs and guard restores.
+- **Watch runs live,** then read the result, the diff, the Markdown summary (one click to copy into a pull request) and every step of the trace: OpenCode's tool calls, Open Agent's checks, repairs and guard restores.
+- **Check your setup:** the Setup check page runs `openagent doctor` and shows the fix next to each problem.
 - **Run benchmarks and evolutions** on a task folder, or the offline demo with no API key.
 - **Open any results folder** (`results.json` or `evolution.json`), for example the committed `docs/demo` and `docs/evolve`. Every run is a square you can click to read its trace.
 
 | | |
 |---|---|
 | ![A trace: the agent weakens a test, the guard restores it, the check fails, a repair, then the real fix](docs/img/ui-trace.png) | ![An evolution: the lineage from 4/6 to 6/6 and each generation's signal, change and verdict](docs/img/ui-evolution.png) |
+| ![The Setup check page: Python, OpenCode, credentials, model, git, sandbox and AgentDiff, each with its fix](docs/img/ui-setup.png) | |
 
 It listens only on 127.0.0.1. Because it runs commands, every API call must carry a per-session token
 embedded in the page and a localhost Host header, so no other website open in your browser can trigger

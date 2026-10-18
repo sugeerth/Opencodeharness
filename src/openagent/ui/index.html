@@ -128,6 +128,7 @@ details.ad{margin-top:18px}details.ad summary{cursor:pointer;font-weight:600;fon
       <a href="#/new/bench" data-nav="bench"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13V8M8 13V3M13 13V6"/></svg>Benchmark</a>
       <a href="#/new/evolve" data-nav="evolve"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12c2-6 8-6 10-8M10 4h3v3"/></svg>Evolve the harness</a>
       <a href="#/new/demo" data-nav="demo"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 2"/></svg>Offline demo</a>
+      <a href="#/new/setup" data-nav="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8.5l3 3 7-7"/></svg>Setup check</a>
       <a href="#/new/open" data-nav="open"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 5h4l1 1.5h7V13H2z"/></svg>Open results</a>
     </nav>
     <div class="jobs-h"><span>Jobs</span><span id="jobcount"></span></div>
@@ -291,6 +292,27 @@ function viewOpen() {
       <span class="hint" id="err"></span></div></div>`;
   $("#go").onclick = () => submit("/api/import", {dir: val("dir")});
   if (guess) { $("#q1").onclick = () => submit("/api/import", {dir: guess + "demo"}); $("#q2").onclick = () => submit("/api/import", {dir: guess + "evolve"}); }
+}
+
+function viewSetup() {
+  $("#main").innerHTML = `
+    <h1>Setup check</h1>
+    <p class="sub">What <span class="kbd">openagent doctor</span> checks: OpenCode and its version, your credentials (names only, never values), the model, git, the Docker sandbox and AgentDiff. Each problem comes with the command that fixes it.</p>
+    <div class="card"><div class="grid2">${field("model", "Model (optional)", {ph: "anthropic/claude-sonnet-5-5", hint: "Checked against the models OpenCode lists."})}</div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="go">Check</button><button class="btn ghost" id="ping">Check, with one real run</button><span class="hint" id="err"></span></div></div>
+    <div id="out" style="margin-top:16px"></div>`;
+  const go = async (ping) => {
+    $("#out").innerHTML = `<div class="empty">Checking…</div>`;
+    try {
+      const r = await api(`/api/doctor?model=${encodeURIComponent(val("model"))}&ping=${ping ? 1 : 0}`);
+      const color = {ok: "var(--good)", warn: "var(--warn)", fail: "var(--bad)", skip: "var(--soft)"};
+      $("#out").innerHTML = `<div class="card">${r.checks.map(c => `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">
+        <b style="flex:none;width:1.2em;text-align:center;color:${color[c.status]}">${esc(c.mark)}</b><div><b>${esc(c.name)}</b> <span>${esc(c.detail)}</span>
+        ${c.fix && c.status !== "ok" ? `<div class="hint">→ <span class="kbd">${esc(c.fix)}</span></div>` : ""}</div></div>`).join("")}</div>`;
+    } catch (e) { $("#out").innerHTML = `<div class="banner err">${esc(e.message)}</div>`; }
+  };
+  $("#go").onclick = () => go(false); $("#ping").onclick = () => go(true);
+  go(false);
 }
 
 async function submit(path, body) {
@@ -500,7 +522,7 @@ function route() {
   document.querySelectorAll("nav.actions a").forEach(x => x.classList.toggle("on", a === "new" && x.dataset.nav === b));
   if (a === "job" && b) return viewJob(decodeURIComponent(b));
   current = null; refreshJobs();
-  ({bench: viewBench, evolve: viewEvolve, demo: viewDemo, open: viewOpen}[b] || viewNewRun)();
+  ({bench: viewBench, evolve: viewEvolve, demo: viewDemo, open: viewOpen, setup: viewSetup}[b] || viewNewRun)();
 }
 window.addEventListener("hashchange", route);
 (async () => {

@@ -649,6 +649,10 @@ def test_ui_page_and_auth(ui):
     assert ui("/api/jobs", host="evil.example")[0] == 403            # DNS rebinding
     assert ui("/api/run", {"task": "x", "dir": "/"}, token="")[0] == 403  # CSRF
     assert ui("/api/info")[1]["presets"] == list(PRESETS)
+    checks = {c["name"]: c for c in ui("/api/doctor")[1]["checks"]}
+    assert {"python", "opencode", "credentials", "model", "git", "sandbox", "agentdiff"} <= set(checks)
+    assert checks["python"]["status"] == "ok" and checks["python"]["mark"] == "✓"
+    assert ui("/api/doctor", token="")[0] == 403
 
 
 def test_ui_run_job_end_to_end(ui, fake, tmp_path):
@@ -671,6 +675,7 @@ def test_ui_run_job_end_to_end(ui, fake, tmp_path):
     trace = ui(f"/api/jobs/{job['id']}/file?path={j['summary']['trace']}")[1]
     assert trace["schema_version"] == 1 and trace["outcome"]["success"]
     assert ui(f"/api/jobs/{job['id']}/file?path=../../../etc/passwd")[0] == 403
+    assert "the check passed" in ui(f"/api/jobs/{job['id']}/file?path=summary.md")[1]
 
 
 def test_ui_import_and_delete_keeps_the_folder(ui):

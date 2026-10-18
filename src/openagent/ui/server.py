@@ -317,6 +317,10 @@ def make_handler(store: Store, token: str):
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
             parts = u.path.strip("/").split("/")
             try:
+                if parts == ["api", "doctor"]:
+                    from ..doctor import run as doctor
+                    checks = doctor(model=q.get("model") or None, ping=q.get("ping") == "1")
+                    return self._json({"checks": [c.__dict__ | {"mark": c.mark} for c in checks]})
                 if parts == ["api", "info"]:
                     return self._json({"version": __version__, "opencode": shutil.which("opencode"),
                                        "agentdiff": shutil.which("agentdiff"), "examples": str(EXAMPLES),
